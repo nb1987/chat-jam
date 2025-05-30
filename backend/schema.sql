@@ -1,0 +1,32 @@
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  created_at TIMESTAMP DEFAULT NOW(),
+  userName VARCHAR(32) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password TEXT NOT NULL, 
+  userImgSrc TEXT,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL
+);
+
+CREATE TABLE chat_rooms (
+  id SERIAL PRIMARY KEY,
+  created_at TIMESTAMP DEFAULT NOW(),
+  user1_id INT REFERENCES users(id) ON DELETE CASCADE,
+  user2_id INT REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE messages (
+  id SERIAL PRIMARY KEY,
+  created_at TIMESTAMP DEFAULT NOW(),
+  room_id INT REFERENCES chat_rooms(id) ON DELETE CASCADE,
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  text TEXT NOT NULL
+);
+
+CREATE TABLE friends (
+  user1_id INT REFERENCES users(id) ON DELETE CASCADE,
+  user2_id INT REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (user1_id, user2_id)
+);
