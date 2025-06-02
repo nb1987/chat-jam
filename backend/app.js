@@ -1,15 +1,16 @@
-import "module-alias/register.js";
-
 import express from "express";
 import http from "http";
 import path from "path";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+import fileUpload from "express-fileupload";
 import "dotenv/config";
-
 import { fileURLToPath } from "url";
 import { Server as SocketIOServer } from "socket.io";
+import accountRoutes from "./app/routes/accounts.js";
 
 const app = express();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -23,8 +24,15 @@ const io = new SocketIOServer(server, {
 const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
-
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+
+app.use(
+  fileUpload({
+    limits: { fileSize: 1 * 1024 * 1024 },
+  })
+);
 
 app.use(
   cors({
@@ -38,9 +46,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/", (req, res) => {
-  res.send("✅ Backend is working!");
-});
+app.use("/api/accounts", accountRoutes);
 
 io.on("connection", (socket) => {
   socket.on("chat message", (msg) => {
@@ -52,3 +58,5 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
   console.log(`🚩Server running on port ${PORT}`);
 });
+
+export default app;

@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useContext } from "react";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import Button from "../shared/Button";
 import SelectField from "../shared/SelectField";
-import { usStates } from "@frontend/utils/selectOptons";
 import InputField from "../shared/InputField";
+import { usStates } from "@frontend/utils/selectOptons";
+import AccountService from "@frontend/services/account.service";
+import AuthContext from "@frontend/contexts/auth-context";
 
 export default function SignUp() {
   useEffect(() => {
@@ -13,15 +15,23 @@ export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
-
   const [userImgSrc, setUserImgSrc] = useState(null);
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  const authContext = useContext(AuthContext);
   const fileInputRef = useRef(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
+
+    if (file) {
+      if (file.size > 1024 * 1024) {
+        alert("File is too large. Max size is 1MB.");
+        return;
+      }
+    }
     if (!file) return;
 
     const reader = new FileReader(); // file reading object is created
@@ -34,12 +44,41 @@ export default function SignUp() {
 
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
+  }; // simulate a click on the 'input' element.
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    const accountService = new AccountService(
+      new AbortController(),
+      authContext
+    );
+    try {
+      const result = await accountService.createUserAccount(
+        email,
+        password,
+        userName,
+        userImgSrc,
+        city,
+        state
+      );
+      authContext.setAccessToken(result.accessToken);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-3xl mt-12">
-        <form className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 sm:max-w-xl">
+        <form
+          method="POST"
+          onSubmit={handleSignUp}
+          className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 sm:max-w-xl"
+        >
           <div className="col-span-full flex items-center gap-x-8">
             {userImgSrc ? (
               <img
@@ -138,6 +177,7 @@ export default function SignUp() {
           <div className="mt-4 mb-8 flex">
             <Button
               type="submit"
+              isProcessing={isProcessing}
               buttonStyle="rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
             >
               Save

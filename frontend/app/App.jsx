@@ -1,13 +1,17 @@
 import { Route, Routes } from "react-router-dom";
+import { useState } from "react";
 import LandingAfterLogin from "@frontend/components/pages/LandingAfterLogin";
 import Login from "@frontend/components/pages/Login";
 import SignUp from "./components/pages/SignUp";
 import Settings from "@frontend/components/pages/Settings";
 import PageNotFound from "@frontend/components/pages/PageNotFound";
+import AuthContext from "./contexts/auth-context";
 
 function App() {
+  const [accessToken, setAccessToken] = useState(null);
+
   return (
-    <>
+    <AuthContext.Provider value={{ accessToken, setAccessToken }}>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/after-login" element={<LandingAfterLogin />} />
@@ -17,7 +21,7 @@ function App() {
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
-    </>
+    </AuthContext.Provider>
   );
 }
 

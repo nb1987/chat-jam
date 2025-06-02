@@ -2,25 +2,25 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { promisify } from "util";
 
-const hashPassword = (password) => {
+export function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
   const hashedPassword = crypto
     .pbkdf2Sync(password, salt, 100000, 64, "sha512")
     .toString("hex");
   return { salt, hashedPassword };
-};
+}
 
-const verifyPassword = (password, salt, storedHash) => {
+export function verifyPassword(password, salt, storedHash) {
   const hash = crypto
     .pbkdf2Sync(password, salt, 100000, 64, "sha512")
     .toString("hex");
   return hash === storedHash;
-};
+}
 
-function generateTokens(account) {
+export function generateTokens(account) {
   const data = {
     id: account.id,
-    nickname: account.nickname,
+    userName: account.userName,
   };
   return {
     accessToken: jwt.sign(
@@ -36,13 +36,13 @@ function generateTokens(account) {
   };
 }
 
-function verifyAccessToken(token) {
+export function verifyAccessToken(token) {
   return jwt.verify(token, process.env.JWT_SECRET);
 }
 
 const verifyToken = promisify(jwt.verify);
 
-async function getUserFromToken(token) {
+export async function getUserFromToken(token) {
   try {
     const user = await verifyToken(token, process.env.JWT_SECRET);
     return user;
@@ -51,11 +51,3 @@ async function getUserFromToken(token) {
     throw new Error("Invalid access token");
   }
 }
-
-exports = {
-  hashPassword,
-  verifyPassword,
-  generateTokens,
-  verifyAccessToken,
-  getUserFromToken,
-};
