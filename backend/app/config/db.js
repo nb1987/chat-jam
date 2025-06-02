@@ -23,16 +23,16 @@ async function connectWithRetry(retries = 10, delay = 3000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const client = await pool.connect();
-      console.log("✅ Successfully connected to PostgreSQL database!");
+      console.log("Successfully connected to PostgreSQL database!");
       client.release();
       break;
     } catch (err) {
       console.error(
-        `⛔ Attempt ${attempt} - Database connection failed:`,
+        `⛔Attempt ${attempt} - Database connection failed:`,
         err.message
       );
       if (attempt === retries) {
-        console.error("❌ Exceeded max retries. Exiting.");
+        console.error("Exceeded max retries. Exiting.");
         process.exit(1); // Crash app if DB is unavailable
       }
       await new Promise((res) => setTimeout(res, delay));

@@ -5,11 +5,11 @@ class AccountService {
     this.client = new Client(abortController, authContext);
   }
 
-  async createUserAccount(email, password, userName, userImgSrc, city, state) {
+  async createUserAccount(email, password, username, userImgSrc, city, state) {
     const data = await this.client.post("/api/accounts/signup", {
       email,
       password,
-      userName,
+      username,
       userImgSrc,
       city,
       state,

@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "preLaunchTask": "Launch App",
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Docker Container",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/backend",
+      "remoteRoot": "/app",
+      "sourceMaps": true,
+      "skipFiles": ["/usr/src/node_modules/**/*.js", "<node_internals>/**"]
+    }
+  ]
+}

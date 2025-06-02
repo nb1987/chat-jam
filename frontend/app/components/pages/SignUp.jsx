@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import Button from "../shared/Button";
 import SelectField from "../shared/SelectField";
@@ -14,7 +15,7 @@ export default function SignUp() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userName, setUserName] = useState("");
+  const [username, setUsername] = useState("");
   const [userImgSrc, setUserImgSrc] = useState(null);
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -22,6 +23,7 @@ export default function SignUp() {
 
   const authContext = useContext(AuthContext);
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -58,12 +60,13 @@ export default function SignUp() {
       const result = await accountService.createUserAccount(
         email,
         password,
-        userName,
+        username,
         userImgSrc,
         city,
         state
       );
       authContext.setAccessToken(result.accessToken);
+      navigate("/friend-list", { replace: true });
     } catch (err) {
       console.error(err);
     } finally {
@@ -115,14 +118,14 @@ export default function SignUp() {
 
           <div className="col-span-full">
             <InputField
-              htmlFor="userName"
+              htmlFor="username"
               label="Username"
-              id="userName"
-              value={userName}
-              name="userName"
-              onChange={(e) => setUserName(e.target.value)}
-              type="userName"
-              autoComplete="userName"
+              id="username"
+              value={username}
+              name="username"
+              onChange={(e) => setUsername(e.target.value)}
+              type="username"
+              autoComplete="username"
             />
           </div>
           <div className="col-span-full">

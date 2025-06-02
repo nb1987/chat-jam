@@ -25,7 +25,7 @@ export async function createAccount(payload) {
     `;
 
   const values = [
-    account.userName,
+    account.username,
     account.email,
     account.passwordHash,
     account.userImgSrc,

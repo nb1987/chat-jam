@@ -46,6 +46,11 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((err, req, res, next) => {
+  console.error("error:", err.message);
+  res.status(500).json({ error: "Internal Server Error" });
+});
+
 app.use("/api/accounts", accountRoutes);
 
 io.on("connection", (socket) => {

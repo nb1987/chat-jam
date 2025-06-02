@@ -4,7 +4,7 @@ import { generateTokens } from "../utils/auth.js";
 
 const router = express.Router();
 
-router.post("/accounts/signup", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
     const payload = req.body;
     const createdUser = await createAccount(payload);
