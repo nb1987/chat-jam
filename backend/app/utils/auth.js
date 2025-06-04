@@ -19,7 +19,7 @@ export function verifyPassword(password, salt, storedHash) {
 
 export function generateTokens(account) {
   const data = {
-    id: account.id
+    id: account.id,
   };
   return {
     accessToken: jwt.sign(

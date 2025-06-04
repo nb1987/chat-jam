@@ -1,18 +1,15 @@
 import pool from "../config/db.js";
 import Account from "../models/account.js";
 
-export async function getAccount(id) {
+export async function getUserInfo(userId) {
   const q = `
-  SELECT(*) FROM users
+  SELECT id, username, userImgSrc FROM users
   WHERE id = $1
   `;
 
-  const result = await pool.query(q, [id]);
+  const result = await pool.query(q, [userId]);
 
-  if (result.rows.length > 0) {
-    return Account.createAccount(result.rows[0]); // return Account instance
-  }
-  return null;
+  return result.rows[0];
 }
 
 export async function createAccount(payload) {

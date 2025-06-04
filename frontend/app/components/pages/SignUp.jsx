@@ -66,7 +66,7 @@ export default function SignUp() {
         state
       );
       authContext.setAccessToken(result.accessToken);
-      navigate("/friend-list", { replace: true });
+      navigate("/friends", { replace: true });
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,7 +111,7 @@ export default function SignUp() {
                 Change profile image
               </Button>
               <p className="mt-2 ml-3 text-xs/5 text-gray-400">
-                JPG, GIF or PNG. 1MB max.
+                JPG or PNG. 1MB max.
               </p>
             </div>
           </div>

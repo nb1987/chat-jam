@@ -16,6 +16,11 @@ class AccountService {
     });
     return data;
   }
+
+  async getUserInfo(userId) {
+    const data = await this.client.get(`api/accounts/${userId}`);
+    return data;
+  }
 }
 
 export default AccountService;
