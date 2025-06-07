@@ -17,8 +17,21 @@ class AccountService {
     return data;
   }
 
+  async loginUser(email, password) {
+    const data = await this.client.post("/api/accounts/login", {
+      email,
+      password,
+    });
+    return data;
+  }
+
   async getUserInfo(userId) {
-    const data = await this.client.get(`api/accounts/${userId}`);
+    const data = await this.client.get(`/api/accounts/${userId}`);
+    return data;
+  }
+
+  async getUserFriends(userId) {
+    const data = await this.client.get(`/api/accounts/${userId}/friends`);
     return data;
   }
 }

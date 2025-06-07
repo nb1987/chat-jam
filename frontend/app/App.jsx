@@ -1,16 +1,14 @@
 import { Route, Routes } from "react-router-dom";
 import { useState } from "react";
-import LandingAfterLogin from "@frontend/components/pages/LandingAfterLogin";
-import TopNavigation from "@frontend/components/layout/TopNavigation";
-import BottomNavigation from "@frontend/components/layout/BottomNavigation";
 import Login from "@frontend/components/pages/Login";
 import SignUp from "./components/pages/SignUp";
 import Settings from "@frontend/components/pages/Settings";
 import AddFriend from "@frontend/components/pages/AddFriend";
 import Friends from "@frontend/components/pages/Friends";
 import Chat from "@frontend/components/pages/Chat";
+//import Profile from "@frontend/components/pages/Profile";
 import Search from "@frontend/components/pages/Search";
-import PageNotFound from "@frontend/components/pages/PageNotFound";
+import PageNotFound from "@frontend/components/notifications/PageNotFound";
 import AuthContext from "@frontend/contexts/auth-context";
 import MainLayout from "@frontend/components/layout/MainLayout";
 
@@ -28,6 +26,8 @@ function App() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/search" element={<Search />} />
           <Route path="/add-friend" element={<AddFriend />} />
+          {/* <Route path="/profile/:username" element={<Profile />} /> */}
+
           <Route path="/settings" element={<Settings />} />
         </Route>
 

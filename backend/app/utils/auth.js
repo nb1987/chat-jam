@@ -44,6 +44,11 @@ const verifyToken = promisify(jwt.verify);
 export async function getUserFromToken(token) {
   try {
     const user = await verifyToken(token, process.env.JWT_SECRET);
+
+    if (user.tokenType !== "refresh") {
+      throw new Error("Invalid token type");
+    }
+
     return user;
   } catch (e) {
     console.error("Access token invalid:", e.message);

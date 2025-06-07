@@ -1,21 +1,57 @@
 import { useEffect, useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import AuthContext from "@frontend/contexts/auth-context";
-import Button from "../shared/Button";
-import InputField from "../shared/InputField";
+import AccountService from "@frontend/services/account.service";
+import Button from "@frontend/components/shared/Button";
+import Label from "@frontend/components/shared/Label";
 
+const inputStyle =
+  "block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-gray-800 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6";
 const buttonStyle =
   "flex w-full justify-center rounded-md bg-orange-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-orange-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600";
 
+// alert user when the pw is wrong
+//* email should be unique! check in the DB */
+
 export default function Login() {
+  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
   useEffect(() => {
     document.title = "Log in - ChatJam";
   }, []);
 
   const authContext = useContext(AuthContext);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleLogin = async (email, password) => {
+    setIsProcessing(true);
+
+    const accountService = new AccountService(
+      new AbortController(),
+      authContext
+    );
+
+    try {
+      const result = await accountService.loginUser(email, password);
+      authContext.setAccessToken(result.accessToken);
+      navigate("/friends", { replace: true });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const onSubmit = ({ email, password }) => {
+    handleLogin(email, password);
+  };
 
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
@@ -28,31 +64,53 @@ export default function Login() {
       </div>
 
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-        <form action="#" method="POST" className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <InputField
-              htmlFor="email"
-              label="Email address"
+            <Label htmlFor="email" labelText="Email" />
+            <input
+              type="text"
               id="email"
-              value={email}
               name="email"
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              autoComplete="email"
+              {...register("email", {
+                required: true,
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                },
+              })}
+              className={inputStyle}
             />
+            {errors.email?.type === "required" && (
+              <p className="text-red-500">Please enter your email.</p>
+            )}
+            {errors.email?.type === "pattern" && (
+              <p className="text-red-500">
+                Please enter a valid email address.
+              </p>
+            )}
           </div>
 
           <div>
-            <InputField
-              htmlFor="password"
-              label="Password"
-              id="password"
-              value={password}
-              name="password"
-              onChange={(e) => setPassword(e.target.value)}
+            <Label htmlFor="password" labelText="Password" />
+            <input
               type="password"
-              autoComplete="password"
+              id="password"
+              name="password"
+              {...register("password", {
+                required: true,
+                minLength: 6,
+                maxLength: 12,
+              })}
+              className={inputStyle}
             />
+            {errors.password?.type === "required" && (
+              <p className="text-red-500">Please enter password.</p>
+            )}
+            {errors.password?.type === "minLength" ||
+              (errors.password?.type === "maxLength" && (
+                <p className="text-red-500">
+                  Password must be between 6 and 12 characters.
+                </p>
+              ))}
           </div>
 
           <div>
@@ -68,12 +126,12 @@ export default function Login() {
         </form>
 
         <div className="flex justify-between mt-6">
-          <a
-            href="#"
+          <Link
+            to="/signup"
             className="font-semibold text-gray-500 hover:text-orange-600"
           >
             Not a member?{" "}
-          </a>
+          </Link>
 
           <a
             href="#"

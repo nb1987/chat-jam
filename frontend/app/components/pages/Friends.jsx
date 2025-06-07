@@ -2,6 +2,10 @@ import { useContext, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import AuthContext from "@frontend/contexts/auth-context";
 import AccountService from "@frontend/services/account.service";
+import Spinner from "@frontend/components/shared/Spinner";
+import ErrorPage from "@frontend/components/notifications/ErrorPage";
+import ListedFriend from "@frontend/components/ui/ListedFriend";
+import Profile from "@frontend/components/shared/Profile";
 
 export default function Friends() {
   const authContext = useContext(AuthContext);
@@ -10,9 +14,11 @@ export default function Friends() {
   const [page, setPage] = useState({
     isLoading: true,
     error: null,
-    userData: [],
-    // listOfFriends: null,
+    userData: {},
+    friends: [],
   });
+
+  const [dialogOpens, setDialogOpens] = useState(false);
 
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";
@@ -20,12 +26,18 @@ export default function Friends() {
     const abortController = new AbortController();
     const accountService = new AccountService(abortController, authContext);
 
-    const fetchUserInfo = async () => {
+    const fetchPageData = async () => {
       try {
         setPage((state) => ({ ...state, isLoading: true }));
         const data = await accountService.getUserInfo(decodedUser.id);
+        const friends = await accountService.getUserFriends(decodedUser.id);
 
-        setPage((state) => ({ ...state, userData: data, isLoading: false }));
+        setPage((state) => ({
+          ...state,
+          userData: data,
+          friends,
+          isLoading: false,
+        }));
       } catch (err) {
         if (!abortController.signal.aborted) {
           console.error(err);
@@ -37,7 +49,8 @@ export default function Friends() {
         }
       }
     };
-    fetchUserInfo();
+
+    fetchPageData();
 
     return () => {
       abortController.abort();
@@ -46,17 +59,30 @@ export default function Friends() {
 
   return (
     <>
-      <ul
-        role="list of friends"
-        className="divide-y divide-gray-200 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
-      >
-        <li key={1} className="py-4">
-          {page.userData.username}
-        </li>
-        <li key={2} className="py-4">
-          60 friends
-        </li>
-      </ul>
+      {page.isLoading && <Spinner />}
+      {page.error && <ErrorPage text={page.error} />}
+
+      {!page.isLoading && !page.error && (
+        <ul
+          role="list of friends"
+          className="divide-y divide-gray-200 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+        >
+          <li key={1} onClick={() => setDialogOpens(true)} className="py-1">
+            <ListedFriend person={page.userData} />
+          </li>
+          <li key={2} className="py-1">
+            {page.friends.length === 0 ? (
+              <p className="mt-4 ml-4">No friends yet</p>
+            ) : (
+              page.friends.map((f) => <ListedFriend key={f.id} person={f} />)
+            )}
+          </li>
+        </ul>
+      )}
+
+      {dialogOpens && (
+        <Profile userInfo={page.userData} setDialogOpens={setDialogOpens} />
+      )}
     </>
   );
 }

@@ -1,24 +1,34 @@
 import { useEffect, useRef, useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import { UserCircleIcon } from "@heroicons/react/24/solid";
-import Button from "../shared/Button";
-import SelectField from "../shared/SelectField";
-import InputField from "../shared/InputField";
+import { useForm } from "react-hook-form";
 import { usStates } from "@frontend/utils/selectOptons";
+import { useNavigate } from "react-router-dom";
+import { ChevronDownIcon, UserCircleIcon } from "@heroicons/react/24/solid";
+import Button from "@frontend/components/shared/Button";
+import Label from "@frontend/components/shared/Label";
 import AccountService from "@frontend/services/account.service";
 import AuthContext from "@frontend/contexts/auth-context";
 
+const inputStyle =
+  "block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-gray-800 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6";
+
+const selectStyle =
+  "col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-1.5 pr-8 pl-3 text-base text-gray-800 outline-1 -outline-offset-1 outline-gray-300 *:bg-white focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6";
+const buttonStyle =
+  "rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
+
+// pop error message when image upload fails (file extension & file size)
 export default function SignUp() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
   useEffect(() => {
     document.title = "Sign up - ChatJam";
   }, []);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
-  const [userImgSrc, setUserImgSrc] = useState(null);
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const [userImgSrc, setUserImgSrc] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const authContext = useContext(AuthContext);
@@ -48,14 +58,22 @@ export default function SignUp() {
     fileInputRef.current?.click();
   }; // simulate a click on the 'input' element.
 
-  const handleSignUp = async (e) => {
-    e.preventDefault();
+  //
+  const handleSignUp = async (
+    email,
+    password,
+    username,
+    userImgSrc,
+    city,
+    state
+  ) => {
     setIsProcessing(true);
 
     const accountService = new AccountService(
       new AbortController(),
       authContext
     );
+
     try {
       const result = await accountService.createUserAccount(
         email,
@@ -65,6 +83,7 @@ export default function SignUp() {
         city,
         state
       );
+
       authContext.setAccessToken(result.accessToken);
       navigate("/friends", { replace: true });
     } catch (err) {
@@ -74,12 +93,16 @@ export default function SignUp() {
     }
   };
 
+  const onSubmit = ({ email, password, username, city, state }) => {
+    handleSignUp(email, password, username, userImgSrc, city, state);
+  };
+  //
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-3xl mt-12">
         <form
-          method="POST"
-          onSubmit={handleSignUp}
+          onSubmit={handleSubmit(onSubmit)}
           className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 sm:max-w-xl"
         >
           <div className="col-span-full flex items-center gap-x-8">
@@ -97,6 +120,7 @@ export default function SignUp() {
               ref={fileInputRef}
               type="file"
               name="userImgSrc"
+              value={userImgSrc}
               accept="image/*"
               onChange={handleImageChange}
               className="hidden"
@@ -117,71 +141,114 @@ export default function SignUp() {
           </div>
 
           <div className="col-span-full">
-            <InputField
-              htmlFor="username"
-              label="Username"
+            <Label htmlFor="username" labelText="Username" />
+            <input
+              type="text"
               id="username"
-              value={username}
               name="username"
-              onChange={(e) => setUsername(e.target.value)}
-              type="username"
-              autoComplete="username"
+              {...register("username", {
+                required: true,
+              })}
+              className={inputStyle}
             />
+            {errors.username?.type === "required" && (
+              <p className="text-red-500">Please enter your username.</p>
+            )}
           </div>
+
           <div className="col-span-full">
-            <InputField
-              htmlFor="email"
-              label="Email address"
+            <Label htmlFor="email" labelText="Email" />
+            <input
+              type="text"
               id="email"
-              value={email}
               name="email"
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              autoComplete="email"
+              {...register("email", {
+                required: true,
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                },
+              })}
+              className={inputStyle}
             />
+            {errors.email?.type === "required" && (
+              <p className="text-red-500">Please enter your email.</p>
+            )}
+            {errors.email?.type === "pattern" && (
+              <p className="text-red-500">
+                Please enter a valid email address.
+              </p>
+            )}
           </div>
+
           <div className="col-span-full">
-            <InputField
-              htmlFor="password"
-              label="Password"
-              id="password"
-              value={password}
-              name="password"
-              onChange={(e) => setPassword(e.target.value)}
+            <Label htmlFor="password" labelText="Password" />
+            <input
               type="password"
-              autoComplete="password"
+              id="password"
+              name="password"
+              {...register("password", {
+                required: true,
+                minLength: 6,
+                maxLength: 12,
+              })}
+              className={inputStyle}
             />
+            {errors.password?.type === "required" && (
+              <p className="text-red-500">Please enter password.</p>
+            )}
+            {errors.password?.type === "minLength" ||
+              (errors.password?.type === "maxLength" && (
+                <p className="text-red-500">
+                  Password must be between 6 and 12 characters.
+                </p>
+              ))}
           </div>
+
           <div className="sm:col-span-3">
-            <InputField
-              htmlFor="city"
-              label="City"
-              id="city"
-              value={city}
-              name="city"
-              onChange={(e) => setCity(e.target.value)}
+            <Label htmlFor="city" labelText="City" />
+            <input
               type="city"
-              autoComplete="city"
+              id="city"
+              name="city"
+              {...register("city", {
+                required: true,
+              })}
+              className={inputStyle}
             />
+            {errors.city && <p className="text-red-500">Please enter city.</p>}
           </div>
+
           <div className="sm:col-span-3">
-            <SelectField
-              htmlFor="state"
-              label="State"
-              optionLabel="Select your state"
-              id="state"
-              name="state"
-              options={usStates}
-              value={state}
-              onChange={(e) => setState(e.target.value)}
-            />
+            <Label htmlFor="state" labelText="State" />
+            <div className="mt-2 grid grid-cols-1">
+              <select
+                id="state"
+                name="state"
+                className={selectStyle}
+                {...register("state", { required: "State is required" })}
+              >
+                <option value="">Select your state</option>
+                {usStates.map((state) => (
+                  <option key={state.value} value={state.value}>
+                    {state.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon
+                aria-hidden="true"
+                className="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-400 sm:size-4"
+              />
+              {errors.state && (
+                <p className="text-red-500">Please enter state.</p>
+              )}
+            </div>
           </div>
 
           <div className="mt-4 mb-8 flex">
             <Button
               type="submit"
               isProcessing={isProcessing}
-              buttonStyle="rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              buttonStyle={buttonStyle}
             >
               Save
             </Button>

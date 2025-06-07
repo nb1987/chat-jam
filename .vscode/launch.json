@@ -2,7 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "preLaunchTask": "Launch App",
       "type": "node",
       "request": "attach",
       "name": "Attach to Docker Container",

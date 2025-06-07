@@ -8,6 +8,7 @@ import "dotenv/config";
 import { fileURLToPath } from "url";
 import { Server as SocketIOServer } from "socket.io";
 import accountRoutes from "./app/routes/accounts.js";
+import usersRoutes from "./app/routes/users.js";
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use((err, req, res, next) => {
 });
 
 app.use("/api/accounts", accountRoutes);
+app.use("/api/users", usersRoutes);
 
 io.on("connection", (socket) => {
   socket.on("chat message", (msg) => {
