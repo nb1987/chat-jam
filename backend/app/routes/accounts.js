@@ -2,15 +2,15 @@ import express from "express";
 import {
   createAccount,
   getUserInfo,
-  getUserFriends,
   getUserInfoByEmail,
+  getHashedPassword,
 } from "../services/account-service.js";
+import { getUserFriends } from "../services/users-service.js";
 import {
   generateTokens,
   getUserFromToken,
   verifyPassword,
 } from "../utils/auth.js";
-import { getHashedPassword } from "../services/account-service.js";
 
 const router = express.Router();
 

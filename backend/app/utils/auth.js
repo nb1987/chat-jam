@@ -25,7 +25,7 @@ export function generateTokens(account) {
     accessToken: jwt.sign(
       { ...data, tokenType: "access" },
       process.env.JWT_SECRET,
-      { expiresIn: "30m" }
+      { expiresIn: "1d" }
     ),
     refreshToken: jwt.sign(
       { id: account.id, tokenType: "refresh" },

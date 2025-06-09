@@ -27,9 +27,7 @@ export default function Search() {
     const fetchPageData = async () => {
       try {
         setPage((state) => ({ ...state, isLoading: true }));
-        const allUsers = await usersService.getAllUsersExceptSelf(
-          decodedUser.id
-        );
+        const allUsers = await usersService.exploreUsers(decodedUser.id);
 
         setPage((state) => ({
           ...state,
@@ -62,14 +60,14 @@ export default function Search() {
 
       <ul
         role="list"
-        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 m-4"
       >
-        {page.usersData.map((user) => (
+        {page.usersData.map((searchedUser) => (
           <li
-            key={user.id}
+            key={searchedUser.id}
             className="col-span-1 divide-y divide-gray-200 rounded-lg bg-white shadow-sm"
           >
-            <UserProfile user={user} />
+            <UserProfile searchedUser={searchedUser} />
           </li>
         ))}
       </ul>

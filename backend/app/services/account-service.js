@@ -31,20 +31,6 @@ export async function getUserInfoByEmail(email) {
   return result.rows[0];
 }
 
-export async function getUserFriends(userId) {
-  const q = `
-  SELECT u.id, u.username, u.userImgSrc 
-  FROM users u
-  JOIN friends f ON 
-    (u.id = f.user1_id AND f.user2_id = $1)
-    OR (u.id = f.user2_id AND f.user1_id = $1)
-  WHERE u.id != $1
-  `;
-
-  const result = await pool.query(q, [userId]);
-  return Array.isArray(result.rows) ? result.rows : [];
-}
-
 export async function createAccount(payload) {
   const account = Account.createAccount(payload);
 

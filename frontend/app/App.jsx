@@ -1,38 +1,82 @@
 import { Route, Routes } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 import Login from "@frontend/components/pages/Login";
-import SignUp from "./components/pages/SignUp";
+import SignUp from "@frontend/components/pages/SignUp";
 import Settings from "@frontend/components/pages/Settings";
 import AddFriend from "@frontend/components/pages/AddFriend";
 import Friends from "@frontend/components/pages/Friends";
 import Chat from "@frontend/components/pages/Chat";
-//import Profile from "@frontend/components/pages/Profile";
 import Search from "@frontend/components/pages/Search";
 import PageNotFound from "@frontend/components/notifications/PageNotFound";
 import AuthContext from "@frontend/contexts/auth-context";
 import MainLayout from "@frontend/components/layout/MainLayout";
+import AccountService from "@frontend/services/account.service";
+import Spinner from "@frontend/components/shared/Spinner";
 
 function App() {
   const [accessToken, setAccessToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const accountService = new AccountService(abortController, {});
+
+    const restoreAccessToken = async () => {
+      try {
+        const refreshToken = Cookies.get("refreshToken");
+        if (!refreshToken) throw new Error("No refresh token in cookies");
+
+        const tokenPair = await accountService.getTokenPair(refreshToken);
+
+        setAccessToken(tokenPair.accessToken);
+        setIsLoading(false);
+      } catch (err) {
+        console.log("User not logged in or refreshing expired", err.message);
+        if (!abortController.signal.aborted) {
+          if (err.status === 401 && window.location.pathname !== "/login") {
+            Cookies.remove("refreshToken", { path: "/" });
+            navigate("/login");
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (!accessToken) {
+      restoreAccessToken();
+    } else {
+      setIsLoading(false);
+    }
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ accessToken, setAccessToken }}>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
 
-        <Route element={<MainLayout />}>
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/add-friend" element={<AddFriend />} />
-          {/* <Route path="/profile/:username" element={<Profile />} /> */}
+          <Route element={<MainLayout />}>
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/add-friend" element={<AddFriend />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
 
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      )}
     </AuthContext.Provider>
   );
 }

@@ -25,6 +25,13 @@ class AccountService {
     return data;
   }
 
+  async getTokenPair(refreshToken) {
+    const data = await this.client.post("/api/accounts/refresh-tokens", {
+      refreshToken,
+    });
+    return data;
+  }
+
   async getUserInfo(userId) {
     const data = await this.client.get(`/api/accounts/${userId}`);
     return data;

@@ -9,7 +9,9 @@ import Profile from "@frontend/components/shared/Profile";
 
 export default function Friends() {
   const authContext = useContext(AuthContext);
-  const decodedUser = jwtDecode(authContext.accessToken);
+  const decodedUser = authContext.accessToken
+    ? jwtDecode(authContext.accessToken)
+    : null;
 
   const [page, setPage] = useState({
     isLoading: true,
@@ -57,11 +59,16 @@ export default function Friends() {
     };
   }, []);
 
+  if (page.isLoading || !decodedUser) {
+    return <Spinner />;
+  }
+
+  if (page.error) {
+    return <ErrorPage text={page.error} />;
+  }
+
   return (
     <>
-      {page.isLoading && <Spinner />}
-      {page.error && <ErrorPage text={page.error} />}
-
       {!page.isLoading && !page.error && (
         <ul
           role="list of friends"
@@ -81,7 +88,11 @@ export default function Friends() {
       )}
 
       {dialogOpens && (
-        <Profile userInfo={page.userData} setDialogOpens={setDialogOpens} />
+        <Profile
+          userInfo={page.userData}
+          dialogOpens={dialogOpens}
+          setDialogOpens={setDialogOpens}
+        />
       )}
     </>
   );

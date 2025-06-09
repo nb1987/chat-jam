@@ -5,20 +5,15 @@ class UsersService {
     this.client = new Client(abortController, authContext);
   }
 
-  async getAllUsersExceptSelf(userId) {
+  async exploreUsers(userId) {
     const data = await this.client.get(`/api/users/${userId}/others`);
+    return data;
+  }
+
+  async addFriend(userId, friendId) {
+    const data = await this.client.post(`/api/users/${userId}/${friendId}`);
     return data;
   }
 }
 
 export default UsersService;
-
-//   async getUserInfo(userId) {
-//     const data = await this.client.get(`/api/accounts/${userId}`);
-//     return data;
-//   }
-
-//   async getUserFriends(userId) {
-//     const data = await this.client.get(`/api/accounts/${userId}/friends`);
-//     return data;
-//   }
