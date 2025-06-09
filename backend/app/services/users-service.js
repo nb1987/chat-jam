@@ -39,5 +39,5 @@ export async function addFriend(userId, friendId) {
 
   await pool.query(q, [userId, friendId]);
 
-  res.status(201).json({ message: "Friend added" });
+  return { message: "Friend added" };
 }

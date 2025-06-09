@@ -3,20 +3,22 @@ import {
   PlusIcon,
   UserIcon,
 } from "@heroicons/react/24/solid";
-import UsersService from "@frontend/services/users.service";
 import { useContext, useState } from "react";
-import AuthContext from "@frontend/contexts/auth-context";
 import { jwtDecode } from "jwt-decode";
+import { toast } from "react-hot-toast";
+import UsersService from "@frontend/services/users.service";
+import AuthContext from "@frontend/contexts/auth-context";
 
 export default function UserProfile({ searchedUser }) {
   const { id: friendId, username, userImgSrc, city, state } = searchedUser;
+
   const authContext = useContext(AuthContext);
   const decodedUser = authContext.accessToken
     ? jwtDecode(authContext.accessToken)
     : null;
 
   const [isAddingFriend, setIsAddingFriend] = useState(false);
-  const [errorForAdding, setErrorForAdding] = useState("");
+  const [isFriend, setIsFriend] = useState(false);
 
   const abortController = new AbortController();
   const usersService = new UsersService(abortController, authContext);
@@ -24,11 +26,13 @@ export default function UserProfile({ searchedUser }) {
   const handleAddFriend = async (userId, friendId) => {
     try {
       setIsAddingFriend(true);
-      const data = await usersService.addFriend(userId, friendId);
+      await usersService.addFriend(userId, friendId);
+      setIsFriend(true);
+      toast.success(`Successfully added ${username} as a new friend`);
     } catch (err) {
       if (!abortController.signal.aborted) {
         console.error(err);
-        setErrorForAdding("Unexpected error while adding friend.");
+        toast.error("Unexpected error while adding friend.");
       }
     }
   };
@@ -63,12 +67,24 @@ export default function UserProfile({ searchedUser }) {
           <div className="flex w-0 flex-1">
             <div
               onClick={() => {
-                handleAddFriend(decodedUser.id, friendId);
+                if (!isFriend && !isAddingFriend) {
+                  handleAddFriend(decodedUser.id, friendId);
+                }
               }}
-              className="relative -mr-px inline-flex w-0 flex-1 items-center justify-center gap-x-3 rounded-bl-lg border border-transparent py-4 text-sm font-semibold text-gray-900"
+              disabled={isAddingFriend}
+              className={`relative -mr-px inline-flex w-0 flex-1 items-center justify-center gap-x-3 
+              rounded-bl-lg border border-transparent py-4 text-sm font-semibold 
+              text-gray-900 
+              ${
+                isFriend
+                  ? "opacity-50 pointer-events-none"
+                  : "cursor-pointer hover:bg-gray-100"
+              }`}
             >
-              <PlusIcon aria-hidden="true" className="size-5 text-gray-400" />
-              Add to friend
+              {!isFriend && (
+                <PlusIcon aria-hidden="true" className="size-5 text-gray-400" />
+              )}
+              {isFriend ? "Added friend" : "Add to friend"}
             </div>
           </div>
           <div className="-ml-px flex w-0 flex-1">

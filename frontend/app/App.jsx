@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import Login from "@frontend/components/pages/Login";
 import SignUp from "@frontend/components/pages/SignUp";
-import Settings from "@frontend/components/pages/Settings";
 import AddFriend from "@frontend/components/pages/AddFriend";
 import Friends from "@frontend/components/pages/Friends";
 import Chat from "@frontend/components/pages/Chat";
@@ -14,6 +13,7 @@ import AuthContext from "@frontend/contexts/auth-context";
 import MainLayout from "@frontend/components/layout/MainLayout";
 import AccountService from "@frontend/services/account.service";
 import Spinner from "@frontend/components/shared/Spinner";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const [accessToken, setAccessToken] = useState(null);
@@ -27,12 +27,15 @@ function App() {
     const restoreAccessToken = async () => {
       try {
         const refreshToken = Cookies.get("refreshToken");
-        if (!refreshToken) throw new Error("No refresh token in cookies");
+        if (!refreshToken) {
+          setIsLoading(false);
+          navigate("/login");
+        } else {
+          const tokenPair = await accountService.getTokenPair(refreshToken);
 
-        const tokenPair = await accountService.getTokenPair(refreshToken);
-
-        setAccessToken(tokenPair.accessToken);
-        setIsLoading(false);
+          setAccessToken(tokenPair.accessToken);
+          setIsLoading(false);
+        }
       } catch (err) {
         console.log("User not logged in or refreshing expired", err.message);
         if (!abortController.signal.aborted) {
@@ -59,11 +62,13 @@ function App() {
 
   return (
     <AuthContext.Provider value={{ accessToken, setAccessToken }}>
+      <Toaster position="top-center" reverseOrder={false} />
+
       {isLoading ? (
         <Spinner />
       ) : (
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
 
           <Route element={<MainLayout />}>
@@ -71,7 +76,6 @@ function App() {
             <Route path="/chat" element={<Chat />} />
             <Route path="/search" element={<Search />} />
             <Route path="/add-friend" element={<AddFriend />} />
-            <Route path="/settings" element={<Settings />} />
           </Route>
 
           <Route path="*" element={<PageNotFound />} />
