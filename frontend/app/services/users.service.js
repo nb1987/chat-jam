@@ -5,13 +5,25 @@ class UsersService {
     this.client = new Client(abortController, authContext);
   }
 
-  async exploreUsers(userId) {
-    const data = await this.client.get(`/api/users/${userId}/others`);
+  async exploreUsers() {
+    const data = await this.client.get(`/api/users/user/others`);
     return data;
   }
 
-  async addFriend(userId, friendId) {
-    const data = await this.client.post(`/api/users/${userId}/${friendId}`);
+  async addFriend(friendId) {
+    const data = await this.client.post(`/api/users/user/${friendId}`);
+    return data;
+  }
+
+  async searchUserByEmail(email) {
+    const data = await this.client.get(`/api/users/search-by-email/${email}`);
+    return data;
+  }
+
+  async searchUserByUsername(username) {
+    const data = await this.client.get(
+      `/api/users/search-by-username/${username}`
+    );
     return data;
   }
 }

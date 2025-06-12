@@ -32,13 +32,13 @@ class AccountService {
     return data;
   }
 
-  async getUserInfo(userId) {
-    const data = await this.client.get(`/api/accounts/${userId}`);
+  async getUserInfo() {
+    const data = await this.client.get(`/api/accounts/user`);
     return data;
   }
 
-  async getUserFriends(userId) {
-    const data = await this.client.get(`/api/accounts/${userId}/friends`);
+  async getUserFriends() {
+    const data = await this.client.get(`/api/accounts/user/friends`);
     return data;
   }
 }

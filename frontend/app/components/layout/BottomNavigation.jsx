@@ -26,8 +26,8 @@ export default function BottomNavigation() {
     {
       icon: <MagnifyingGlassIcon />,
       name: "Search",
-      href: "/search",
-      current: window.location.pathname === "/search",
+      href: "/explore",
+      current: window.location.pathname === "/explore",
     },
   ];
 

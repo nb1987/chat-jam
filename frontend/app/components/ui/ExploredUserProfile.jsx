@@ -4,18 +4,13 @@ import {
   UserIcon,
 } from "@heroicons/react/24/solid";
 import { useContext, useState } from "react";
-import { jwtDecode } from "jwt-decode";
 import { toast } from "react-hot-toast";
 import UsersService from "@frontend/services/users.service";
 import AuthContext from "@frontend/contexts/auth-context";
 
-export default function UserProfile({ searchedUser }) {
+export default function ExploredUserProfile({ searchedUser }) {
   const { id: friendId, username, userImgSrc, city, state } = searchedUser;
-
   const authContext = useContext(AuthContext);
-  const decodedUser = authContext.accessToken
-    ? jwtDecode(authContext.accessToken)
-    : null;
 
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
@@ -23,10 +18,10 @@ export default function UserProfile({ searchedUser }) {
   const abortController = new AbortController();
   const usersService = new UsersService(abortController, authContext);
 
-  const handleAddFriend = async (userId, friendId) => {
+  const handleAddFriend = async (friendId) => {
     try {
       setIsAddingFriend(true);
-      await usersService.addFriend(userId, friendId);
+      await usersService.addFriend(friendId);
       setIsFriend(true);
       toast.success(`Successfully added ${username} as a new friend`);
     } catch (err) {
@@ -68,7 +63,7 @@ export default function UserProfile({ searchedUser }) {
             <div
               onClick={() => {
                 if (!isFriend && !isAddingFriend) {
-                  handleAddFriend(decodedUser.id, friendId);
+                  handleAddFriend(friendId);
                 }
               }}
               disabled={isAddingFriend}

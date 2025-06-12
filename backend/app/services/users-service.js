@@ -26,7 +26,6 @@ export async function exploreUsers(userId) {
   `;
 
   const result = await pool.query(q, [userId]);
-
   return Array.isArray(result.rows) ? result.rows : [];
 }
 
@@ -38,6 +37,27 @@ export async function addFriend(userId, friendId) {
   `;
 
   await pool.query(q, [userId, friendId]);
-
   return { message: "Friend added" };
+}
+
+export async function searchUserByEmail(email) {
+  const q = `
+  SELECT id, username, userImgSrc
+  FROM users 
+  WHERE email = $1 
+  `;
+
+  const result = await pool.query(q, [email]);
+  return Array.isArray(result.rows) ? result.rows[0] : null;
+}
+
+export async function searchUserByUsername(username) {
+  const q = `
+  SELECT id, username, userImgSrc
+  FROM users 
+  WHERE username = $1 
+  `;
+
+  const result = await pool.query(q, [username]);
+  return Array.isArray(result.rows) ? result.rows[0] : null;
 }

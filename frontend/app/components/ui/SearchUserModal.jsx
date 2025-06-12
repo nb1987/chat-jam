@@ -2,14 +2,15 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { EnvelopeIcon, UserCircleIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
-import SearchFormModal from "@frontend/components/shared/SearchFormModal";
+import EmailSearchModal from "@frontend/components/ui/EmailSearchModal";
+import UsernameSearchModal from "@frontend/components/ui/UsernameSearchModal";
 
 export default function SearchUserModal({
   searchModalOpens,
   setSearchModalOpens,
 }) {
   const [emailSearchOpens, setEmailSearchOpens] = useState(false);
-  const [idSearchOpens, setIdSearchOpens] = useState(false);
+  const [usernameSearchOpens, setUsernameSearchOpens] = useState(false);
 
   return (
     <div>
@@ -54,7 +55,6 @@ export default function SearchUserModal({
                   className="pt-6 sm:pb-0.5 flex flex-col items-center justify-center gap-2 py-4 cursor-pointer"
                   onClick={() => {
                     setEmailSearchOpens(true);
-                    setSearchModalOpens(false);
                   }}
                 >
                   <EnvelopeIcon className="h-7 w-7 text-gray-700" />
@@ -69,8 +69,7 @@ export default function SearchUserModal({
                 <div
                   className="pt-6 sm:pb-0.5 flex flex-col items-center justify-center gap-2 py-4 cursor-pointer"
                   onClick={() => {
-                    setIdSearchOpens(true);
-                    setSearchModalOpens(false);
+                    setUsernameSearchOpens(true);
                   }}
                 >
                   <UserCircleIcon className="h-7 w-7 text-gray-700" />
@@ -89,21 +88,19 @@ export default function SearchUserModal({
       </Dialog>
 
       {emailSearchOpens && (
-        <SearchFormModal
+        <EmailSearchModal
           open={emailSearchOpens}
           onClose={() => {
             setEmailSearchOpens(false);
           }}
-          label="Search by Email"
         />
       )}
-      {idSearchOpens && (
-        <SearchFormModal
-          open={idSearchOpens}
+      {usernameSearchOpens && (
+        <UsernameSearchModal
+          open={usernameSearchOpens}
           onClose={() => {
-            setIdSearchOpens(false);
+            setUsernameSearchOpens(false);
           }}
-          label="Search by username"
         />
       )}
     </div>

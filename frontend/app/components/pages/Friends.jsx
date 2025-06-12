@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import AuthContext from "@frontend/contexts/auth-context";
+import FriendsContext from "@frontend/contexts/friends-context";
 import AccountService from "@frontend/services/account.service";
 import Spinner from "@frontend/components/shared/Spinner";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
@@ -12,12 +13,11 @@ export default function Friends() {
   const decodedUser = authContext.accessToken
     ? jwtDecode(authContext.accessToken)
     : null;
-
+  const { friends, setFriends } = useContext(FriendsContext);
   const [page, setPage] = useState({
     isLoading: true,
     error: null,
     userData: {},
-    friends: [],
   });
 
   const [dialogOpens, setDialogOpens] = useState(false);
@@ -31,15 +31,15 @@ export default function Friends() {
     const fetchPageData = async () => {
       try {
         setPage((state) => ({ ...state, isLoading: true }));
-        const data = await accountService.getUserInfo(decodedUser.id);
-        const friends = await accountService.getUserFriends(decodedUser.id);
+        const data = await accountService.getUserInfo();
+        const fetchedFriends = await accountService.getUserFriends();
 
         setPage((state) => ({
           ...state,
           userData: data,
-          friends,
           isLoading: false,
         }));
+        setFriends(fetchedFriends);
       } catch (err) {
         if (!abortController.signal.aborted) {
           console.error(err);
@@ -78,10 +78,10 @@ export default function Friends() {
             <ListedFriend person={page.userData} />
           </li>
           <li key={2} className="py-1">
-            {page.friends.length === 0 ? (
+            {friends.length === 0 ? (
               <p className="mt-4 ml-4">No friends yet</p>
             ) : (
-              page.friends.map((f) => <ListedFriend key={f.id} person={f} />)
+              friends.map((f) => <ListedFriend key={f.id} person={f} />)
             )}
           </li>
         </ul>

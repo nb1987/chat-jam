@@ -1,16 +1,12 @@
-import UserProfile from "@frontend/components/ui/UserProfile";
+import ExploredUserProfile from "@frontend/components/ui/ExploredUserProfile";
 import UsersService from "@frontend/services/users.service";
-import { jwtDecode } from "jwt-decode";
 import { useContext, useEffect, useState } from "react";
 import Spinner from "@frontend/components/shared/Spinner";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import AuthContext from "@frontend/contexts/auth-context";
 
-export default function Search() {
+export default function Explore() {
   const authContext = useContext(AuthContext);
-  const decodedUser = authContext.accessToken
-    ? jwtDecode(authContext.accessToken)
-    : null;
 
   const [page, setPage] = useState({
     isLoading: true,
@@ -27,7 +23,7 @@ export default function Search() {
     const fetchPageData = async () => {
       try {
         setPage((state) => ({ ...state, isLoading: true }));
-        const allUsers = await usersService.exploreUsers(decodedUser.id);
+        const allUsers = await usersService.exploreUsers();
 
         setPage((state) => ({
           ...state,
@@ -67,7 +63,7 @@ export default function Search() {
             key={searchedUser.id}
             className="col-span-1 divide-y divide-gray-200 rounded-lg bg-white shadow-sm"
           >
-            <UserProfile searchedUser={searchedUser} />
+            <ExploredUserProfile searchedUser={searchedUser} />
           </li>
         ))}
       </ul>

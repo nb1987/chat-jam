@@ -11,6 +11,7 @@ import {
   getUserFromToken,
   verifyPassword,
 } from "../utils/auth.js";
+import { authenticateToken } from "../mddleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -20,11 +21,10 @@ router.post("/signup", async (req, res) => {
     const createdUser = await createAccount(payload);
 
     const tokens = generateTokens({ id: createdUser.id });
-
     res.setHeader("Authorization", `Bearer ${tokens.accessToken}`);
 
     res.cookie("refreshToken", tokens.refreshToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
       maxAge: 30 * 24 * 60 * 60 * 1000,
@@ -71,7 +71,7 @@ router.post("/login", async (req, res) => {
       res.setHeader("Authorization", `Bearer ${tokens.accessToken}`);
 
       res.cookie("refreshToken", tokens.refreshToken, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "Strict",
         maxAge: 30 * 24 * 60 * 60 * 1000,
@@ -105,10 +105,9 @@ router.post("/refresh-tokens", async (req, res) => {
   }
 });
 
-router.get("/:userId", async (req, res) => {
+router.get("/user", authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    const userData = await getUserInfo(userId);
+    const userData = await getUserInfo(req.user.id);
 
     res.status(200).json(userData);
   } catch (err) {
@@ -117,10 +116,9 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
-router.get("/:userId/friends", async (req, res) => {
+router.get("/user/friends", authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    const friends = await getUserFriends(userId);
+    const friends = await getUserFriends(req.user.id);
 
     res.status(200).json(friends);
   } catch (err) {
