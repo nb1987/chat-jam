@@ -7,6 +7,7 @@ import { useContext, useState } from "react";
 import { toast } from "react-hot-toast";
 import UsersService from "@frontend/services/users.service";
 import AuthContext from "@frontend/contexts/auth-context";
+import ChatRoom from "@frontend/components/ui/ChatRoom";
 
 export default function ExploredUserProfile({ searchedUser }) {
   const { id: friendId, username, userImgSrc, city, state } = searchedUser;
@@ -14,6 +15,7 @@ export default function ExploredUserProfile({ searchedUser }) {
 
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
+  const [startChatRoom, setStartChatRoom] = useState(false);
 
   const abortController = new AbortController();
   const usersService = new UsersService(abortController, authContext);
@@ -84,7 +86,9 @@ export default function ExploredUserProfile({ searchedUser }) {
           </div>
           <div className="-ml-px flex w-0 flex-1">
             <div
-              onClick={() => {}}
+              onClick={() => {
+                setStartChatRoom(true);
+              }}
               className="relative inline-flex w-0 flex-1 items-center justify-center gap-x-3 rounded-br-lg border border-transparent py-4 text-sm font-semibold text-gray-900"
             >
               <ChatBubbleBottomCenterIcon
@@ -96,6 +100,16 @@ export default function ExploredUserProfile({ searchedUser }) {
           </div>
         </div>
       </div>
+
+      {startChatRoom && (
+        <ChatRoom
+          friendId={friendId}
+          startChatRoom={startChatRoom}
+          closeModal={() => {
+            setStartChatRoom(false);
+          }}
+        />
+      )}
     </>
   );
 }

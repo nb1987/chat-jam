@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { Server as SocketIOServer } from "socket.io";
 import accountRoutes from "./app/routes/accounts.js";
 import usersRoutes from "./app/routes/users.js";
+import chatRoutes from "./app/routes/chat.js";
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
+    methods: ["GET", "POST"],
   })
 );
 
@@ -54,11 +56,25 @@ app.use((err, req, res, next) => {
 
 app.use("/api/accounts", accountRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/chat", chatRoutes);
 
 io.on("connection", (socket) => {
-  socket.on("chat message", (msg) => {
-    // receive event from client
-    io.emit("chat message", msg); // emit the message to client
+  console.log("Socket is connected: ", socket.id);
+
+  socket.on("joinRoom", (roomId) => {
+    socket.join(roomId);
+  });
+
+  socket.on("sendMsg", ({ roomId, msgString, senderId }) => {
+    socket.to(roomId).emit("receiveMsg", {
+      senderId,
+      text: msgString,
+      createdAt: new Date().toLocaleTimeString(),
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
   });
 });
 

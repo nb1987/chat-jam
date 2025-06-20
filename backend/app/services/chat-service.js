@@ -1,0 +1,52 @@
+import pool from "../config/db.js";
+
+export async function fetchChatRoomHistory(roomId) {
+  const q = `
+SELECT user_id, text, created_at
+FROM messages
+WHERE room_id = $1
+ORDER BY created_at ASC
+LIMIT 50 OFFSET 0;
+`;
+
+  const result = await pool.query(q, [roomId]);
+  return Array.isArray(result.rows) ? result.rows : [];
+}
+
+export async function getOrCreateRoomId(userId, friendId) {
+  const userLow = Math.min(userId, friendId);
+  const userHigh = Math.max(userId, friendId);
+
+  const room_exists_q = `
+  SELECT id
+  FROM chat_rooms
+  WHERE user_low = $1
+  AND user_high = $2
+`;
+
+  const create_room_q = `
+  INSERT INTO chat_rooms
+  (user1_id, user2_id)
+  VALUES ($1, $2) 
+  RETURNING id
+`;
+
+  const roomResult = await pool.query(room_exists_q, [userLow, userHigh]);
+
+  if (roomResult.rows.length > 0) {
+    return roomResult.rows[0].id;
+  } else {
+    const newRoom = await pool.query(create_room_q, [userId, friendId]);
+    return newRoom.rows[0].id;
+  }
+}
+
+export async function insertMsg(roomId, userId, text) {
+  const q = `
+      INSERT INTO messages (room_id, user_id, text)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `;
+  const result = await pool.query(q, [roomId, userId, text]);
+  return result.rows[0];
+}
