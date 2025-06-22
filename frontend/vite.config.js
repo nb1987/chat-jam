@@ -18,7 +18,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      "socket.io": {
+      "/socket.io": {
         target: "http://backend:5000",
         changeOrigin: true,
         secure: false,

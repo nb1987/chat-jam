@@ -1,24 +1,119 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
-
-import { socket, sendMsg, receiveMsg } from "@frontend/services/socket";
 import { XMarkIcon } from "@heroicons/react/24/solid";
+import { jwtDecode } from "jwt-decode";
 
-export default function ChatRoom({ friendId, startChatRoom, closeModal }) {
-  const [msgHistory, setMsgHistory] = useState([]);
-  const [text, setText] = useState("");
+import { socket, joinRoom, sendMsg } from "@frontend/services/socket";
+import MessageBubble from "@frontend/components/ui/MessageBubble";
+import AuthContext from "@frontend/contexts/auth-context";
+import AccountService from "@frontend/services/account.service";
+import ChatService from "@frontend/services/chat.service";
+import Spinner from "@frontend/components/shared/Spinner";
+import ErrorPage from "@frontend/components/notifications/ErrorPage";
 
-  const roomId = "";
+export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
+  const authContext = useContext(AuthContext);
+  const decodedUser = authContext.accessToken
+    ? jwtDecode(authContext.accessToken)
+    : null;
 
-  // useEffect(() => {
-  //   joinRoom(roomId);
-  // }, []);
+  const {
+    id: friendId,
+    username: friendName,
+    userImgSrc: friendImg,
+  } = friendObj;
+
+  const [roomState, setRoomState] = useState({
+    isLoading: false,
+    error: null,
+    roomId: "",
+    msgHistory: [],
+    text: "",
+    isTyping: false,
+    myInfo: {},
+  });
+
+  const chatHistoryBottomRef = useRef(null);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const accountService = new AccountService(abortController, authContext);
+    const chatService = new ChatService(abortController, authContext);
+
+    const startChatRoom = async () => {
+      try {
+        setRoomState((state) => ({ ...state, isLoading: true }));
+        const myData = await accountService.getUserInfo(); // {id, username, image}
+        const chatRoomId = await chatService.getChatRoomId(friendId);
+        const chatHistory = await chatService.getChatHistory(chatRoomId);
+
+        setRoomState((state) => ({
+          ...state,
+          isLoading: false,
+          rooId: chatRoomId,
+          msgHistory: chatHistory,
+          myInfo: myData,
+        }));
+        joinRoom(chatRoomId);
+
+        console.log(roomState.myInfo.id); // undefined📍📍📍📍📍
+      } catch (err) {
+        if (!abortController.signal.aborted) {
+          console.error(err);
+          setRoomState((state) => ({
+            ...state,
+            error: "Unexpected error while loading data",
+            isLoading: false,
+          }));
+        }
+      }
+    };
+
+    startChatRoom();
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      chatHistoryBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 0);
+  }, [roomState.msgHistory]);
 
   const handleSend = () => {
-    sendMsg({ roomId, text });
-    setMsgHistory((state) => [...state, { text }]);
-    setText("");
+    const currentText = roomState.text;
+
+    setRoomState((state) => ({
+      ...state,
+      msgHistory: [...state.msgHistory, currentText],
+      text: "",
+      isTyping: false,
+    }));
+
+    sendMsg(roomState.roomId, currentText, roomState.myInfo.id); //📍📍📍
   };
+
+  // insertedMsg = { room_id, user_id, text, created_at }
+  socket.on("msgToRoom", async (insertedMsg) => {
+    const { room_id, user_id } = insertedMsg;
+    if (user_id === roomState.myInfo.id) return; // only accept friend's msg.
+    if (room_id !== roomState.roomId) return;
+
+    setRoomState((state) => ({
+      ...state,
+      msgHistory: [...roomState.msgHistory, insertedMsg],
+    }));
+  });
+
+  if (roomState.isLoading || !decodedUser) {
+    return <Spinner />;
+  }
+
+  if (roomState.error) {
+    return <ErrorPage text={roomState.error} />;
+  }
 
   return (
     <div>
@@ -32,28 +127,62 @@ export default function ChatRoom({ friendId, startChatRoom, closeModal }) {
           <div className="flex min-h-screen items-center justify-center p-4 text-center">
             <DialogPanel
               transition
-              className="relative w-[90%] max-w-sm min-h-[20rem] sm:min-h-[24rem] transform overflow-hidden rounded-lg bg-white px-4 pt-4 text-left shadow-xl transition-all sm:p-6"
+              className="relative w-[90%] max-w-md h-[80vh] sm:min-h-[28rem] 
+             bg-white px-4 pt-4 pb-3 text-left rounded-lg shadow-xl flex flex-col"
             >
-              <div className="px-4 sm:px-6">
-                <div className="ml-3 flex h-7 items-center">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="relative rounded-md bg-white text-gray-400 hover:text-gray-500"
-                  >
-                    <span className="absolute -inset-2.5" />
-                    <span className="sr-only">Close panel</span>
-                    <XMarkIcon aria-hidden="true" className="size-6" />
-                  </button>
-                </div>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">Chat with {friendId}</h2>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="size-5" />
+                </button>
               </div>
-              <div className="mt-6 flex  items-center justify-center gap-2 px-4 sm:px-6">
+              List of messages
+              <div className="flex-1 overflow-y-auto space-y-2 px-1">
+                {roomState.msgHistory.map((msg, i) => (
+                  <MessageBubble
+                    key={i}
+                    message={msg}
+                    myInfo={roomState.myInfo}
+                  />
+                ))}
+                <div ref={chatHistoryBottomRef} />
+              </div>
+              <div className="mt-3 flex items-end gap-2 border-t pt-3">
                 <textarea
-                  type="text"
-                  onChange={(e) => setText(e.target.value)}
-                  className="block w-full rounded-md bg-white px-3 py-1 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6"
+                  rows={1}
+                  value={roomState.text}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setRoomState((state) => ({
+                      ...state,
+                      text: value,
+                      isTyping: value.trim().length > 0,
+                    }));
+                  }}
+                  onInput={(e) => {
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
+                  className="flex-1 resize-none overflow-hidden rounded-md bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-gray-300"
+                  placeholder="Type a message..."
                 />
-                <button onClick={handleSend}>Send</button>
+
+                <button
+                  onClick={handleSend}
+                  className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold shadow-sm
+        ${
+          roomState.isTyping
+            ? "bg-orange-400 text-white hover:bg-orange-500"
+            : "bg-gray-300 text-gray-400 cursor-default"
+        }
+      `}
+                  disabled={!roomState.isTyping}
+                >
+                  Send
+                </button>
               </div>
             </DialogPanel>
           </div>

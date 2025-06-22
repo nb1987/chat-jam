@@ -10,6 +10,7 @@ import { Server as SocketIOServer } from "socket.io";
 import accountRoutes from "./app/routes/accounts.js";
 import usersRoutes from "./app/routes/users.js";
 import chatRoutes from "./app/routes/chat.js";
+import { insertMsg } from "./app/services/chat-service.js";
 
 const app = express();
 
@@ -65,12 +66,15 @@ io.on("connection", (socket) => {
     socket.join(roomId);
   });
 
-  socket.on("sendMsg", ({ roomId, msgString, senderId }) => {
-    socket.to(roomId).emit("receiveMsg", {
-      senderId,
-      text: msgString,
-      createdAt: new Date().toLocaleTimeString(),
-    });
+  //
+  socket.on("sendMsg", async ({ roomId, text, senderId }) => {
+    try {
+      const insertedMsg = await insertMsg(roomId, text, senderId);
+      io.to(roomId).emit("msgToRoom", insertedMsg);
+    } catch (err) {
+      console.error("Failed to insert message:", err.message);
+      socket.emit("msgError", "Failed to send message");
+    }
   });
 
   socket.on("disconnect", () => {

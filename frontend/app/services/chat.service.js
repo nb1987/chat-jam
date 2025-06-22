@@ -15,10 +15,15 @@ class ChatService {
     return data;
   }
 
-  async insertMsg(roomId, text) {
-    const data = await this.client.post(`/api/chat/insert`, { roomId, text });
-    return data;
-  }
+  // async insertMsg(roomId, text, senderId, createdAt) {
+  //   const data = await this.client.post(`/api/chat/insert-msg`, {
+  //     roomId,
+  //     text,
+  //     senderId,
+  //     createdAt,
+  //   });
+  //   return data;
+  // }
 }
 
 export default ChatService;
