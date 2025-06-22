@@ -50,7 +50,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         setRoomState((state) => ({
           ...state,
           isLoading: false,
-          rooId: chatRoomId,
+          roomId: chatRoomId,
           msgHistory: chatHistory,
           myInfo: myData,
         }));
@@ -87,7 +87,12 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
     setRoomState((state) => ({
       ...state,
-      msgHistory: [...state.msgHistory, currentText],
+      msgHistory: state.msgHistory.concat({
+        room_id: roomState.roomId,
+        user_id: roomState.myInfo.id,
+        created_at: new Date(),
+        text: currentText
+      }),
       text: "",
       isTyping: false,
     }));
@@ -144,7 +149,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                 {roomState.msgHistory.map((msg, i) => (
                   <MessageBubble
                     key={i}
-                    message={msg}
+                    msg={msg}
                     myInfo={roomState.myInfo}
                   />
                 ))}

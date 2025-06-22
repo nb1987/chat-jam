@@ -27,13 +27,14 @@ function App() {
   useEffect(() => {
     const abortController = new AbortController();
     const accountService = new AccountService(abortController, {});
+    
+    setSocket(socketInstance);
 
     const restoreAccessToken = async () => {
       try {
         const refreshToken = Cookies.get("refreshToken");
         if (!refreshToken) {
           setIsLoading(false);
-          setSocket(socketInstance);
           navigate("/login");
         } else {
           const tokenPair = await accountService.getTokenPair(refreshToken);
