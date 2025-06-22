@@ -21,8 +21,6 @@ CREATE TABLE chat_rooms (
   CONSTRAINT unique_room_pair UNIQUE (user_low, user_high)
 );
 
-
-
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,
   created_at TIMESTAMP DEFAULT NOW(),

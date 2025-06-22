@@ -103,7 +103,7 @@ export default function ExploredUserProfile({ searchedUser }) {
 
       {startChatRoom && (
         <ChatRoom
-          friendId={friendId}
+          friendObj={searchedUser}
           startChatRoom={startChatRoom}
           closeModal={() => {
             setStartChatRoom(false);

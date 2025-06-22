@@ -2,7 +2,7 @@ import pool from "../config/db.js";
 
 export async function fetchChatRoomHistory(roomId) {
   const q = `
-SELECT user_id, text, created_at
+SELECT room_id, user_id, text, created_at
 FROM messages
 WHERE room_id = $1
 ORDER BY created_at ASC
@@ -41,12 +41,18 @@ export async function getOrCreateRoomId(userId, friendId) {
   }
 }
 
-export async function insertMsg(roomId, userId, text) {
+export async function insertMsg(roomId, text, senderId) {
+  if (!roomId || !senderId) {
+    console.error("Invalid input: roomId or senderId is missing.");
+    throw new Error("Invalid roomId or senderId");
+  }
+
   const q = `
-      INSERT INTO messages (room_id, user_id, text)
-      VALUES ($1, $2, $3)
-      RETURNING *
-    `;
-  const result = await pool.query(q, [roomId, userId, text]);
+    INSERT INTO messages (room_id, text, user_id)
+    VALUES ($1, $2, $3)
+    RETURNING room_id, user_id, text, created_at
+  `;
+
+  const result = await pool.query(q, [roomId, text, senderId]);
   return result.rows[0];
 }
