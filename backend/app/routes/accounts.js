@@ -1,9 +1,13 @@
 import express from "express";
+import multer from "multer";
+import { storage } from "../config/cloudinary.js";
+
 import {
   createAccount,
   getUserInfo,
   getUserInfoByEmail,
   getHashedPassword,
+  editUserProfile,
 } from "../services/account-service.js";
 import { getUserFriends } from "../services/users-service.js";
 import {
@@ -11,14 +15,17 @@ import {
   getUserFromToken,
   verifyPassword,
 } from "../utils/auth.js";
-import { authenticateToken } from "../mddleware/auth.middleware.js";
+import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
+const upload = multer({ storage });
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", upload.single("userImgSrc"), async (req, res) => {
   try {
     const payload = req.body;
-    const createdUser = await createAccount(payload);
+    const file = req.file;
+    let imageUrl = file?.secure_url || file?.url || null;
+    const createdUser = await createAccount(payload, imageUrl);
 
     const tokens = generateTokens({ id: createdUser.id });
     res.setHeader("Authorization", `Bearer ${tokens.accessToken}`);
@@ -108,7 +115,6 @@ router.post("/refresh-tokens", async (req, res) => {
 router.get("/user", authenticateToken, async (req, res) => {
   try {
     const userData = await getUserInfo(req.user.id);
-
     res.status(200).json(userData);
   } catch (err) {
     console.error("fetching error,", err.message);
@@ -119,12 +125,46 @@ router.get("/user", authenticateToken, async (req, res) => {
 router.get("/user/friends", authenticateToken, async (req, res) => {
   try {
     const friends = await getUserFriends(req.user.id);
-
     res.status(200).json(friends);
   } catch (err) {
     console.error("fetching error,", err.message);
     res.status(500).json({ error: "Failed to fetch a list of friends" });
   }
 });
+
+router.patch(
+  "/edit-profile",
+  authenticateToken,
+  upload.single("userImgSrc"),
+  async (req, res) => {
+    try {
+      const { username, city, state } = req.body;
+      const file = req.file;
+      console.log("req.file: uploaded in cloudinary", file);
+
+      let imageUrl = file?.secure_url || file?.url || null;
+
+      const trimmedInfo = {
+        username: username.trim(),
+        city: city.trim(),
+        state,
+        imageUrl,
+      };
+      const updatedInfo = await editUserProfile(req.user.id, trimmedInfo);
+      res.status(200).json(updatedInfo);
+    } catch (err) {
+      console.error(
+        "error from updating user info,",
+        err.stack || err.message || err
+      );
+
+      if (err.message.includes("duplicate key")) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+
+      res.status(500).json({ error: "Failed to update user info" });
+    }
+  }
+);
 
 export default router;

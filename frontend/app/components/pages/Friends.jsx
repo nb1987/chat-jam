@@ -6,21 +6,25 @@ import AccountService from "@frontend/services/account.service";
 import Spinner from "@frontend/components/shared/Spinner";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import ListedFriend from "@frontend/components/ui/ListedFriend";
-import Profile from "@frontend/components/shared/Profile";
+import MyProfile from "@frontend/components/ui/MyProfile";
+import FriendProfile from "@frontend/components/ui/FriendProfile";
 
 export default function Friends() {
   const authContext = useContext(AuthContext);
+  const { accessToken } = useContext(AuthContext);
   const decodedUser = authContext.accessToken
     ? jwtDecode(authContext.accessToken)
     : null;
   const { friends, setFriends } = useContext(FriendsContext);
+
+  const [myProfileOpens, setMyProfileOpens] = useState(false);
+  const [friendProfileOpens, setFriendProfileOpens] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState(null);
   const [page, setPage] = useState({
     isLoading: true,
     error: null,
     userData: {},
   });
-
-  const [dialogOpens, setDialogOpens] = useState(false);
 
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";
@@ -57,7 +61,7 @@ export default function Friends() {
     return () => {
       abortController.abort();
     };
-  }, []);
+  }, [accessToken, setFriends]);
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;
@@ -74,24 +78,42 @@ export default function Friends() {
           role="list of friends"
           className="divide-y divide-gray-200 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
         >
-          <li key={1} onClick={() => setDialogOpens(true)} className="py-1">
+          <li
+            key="myProfile"
+            onClick={() => setMyProfileOpens(true)}
+            className="py-1"
+          >
             <ListedFriend person={page.userData} />
           </li>
-          <li key={2} className="py-1">
-            {friends.length === 0 ? (
-              <p className="mt-4 ml-4">No friends yet</p>
-            ) : (
-              friends.map((f) => <ListedFriend key={f.id} person={f} />)
-            )}
-          </li>
+
+          {friends.map((friend) => (
+            <li
+              key={friend.id}
+              onClick={() => {
+                setSelectedFriend(friend);
+                setFriendProfileOpens(true);
+              }}
+              className="py-1"
+            >
+              <ListedFriend person={friend} />
+            </li>
+          ))}
         </ul>
       )}
 
-      {dialogOpens && (
-        <Profile
+      {myProfileOpens && (
+        <MyProfile
           userInfo={page.userData}
-          dialogOpens={dialogOpens}
-          setDialogOpens={setDialogOpens}
+          myProfileOpens={myProfileOpens}
+          setMyProfileOpens={setMyProfileOpens}
+        />
+      )}
+
+      {friendProfileOpens && (
+        <FriendProfile
+          userInfo={selectedFriend}
+          friendProfileOpens={friendProfileOpens}
+          setFriendProfileOpens={setFriendProfileOpens}
         />
       )}
     </>

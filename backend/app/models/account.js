@@ -10,12 +10,12 @@ class Account {
     this.state = state;
   }
 
-  static createAccount(payload) {
+  static createAccount(payload, imageUrl) {
     return new Account(
       payload.username?.trim(),
       payload.email?.trim(),
       payload.password && hashPassword(payload.password),
-      payload.userImgSrc || null,
+      imageUrl || null,
       payload.city?.trim(),
       payload.state
     );

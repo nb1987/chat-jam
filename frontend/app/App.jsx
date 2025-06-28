@@ -8,6 +8,7 @@ import SignUp from "@frontend/components/pages/SignUp";
 import Friends from "@frontend/components/pages/Friends";
 import Chat from "@frontend/components/pages/Chat";
 import Explore from "@frontend/components/pages/Explore";
+import EditUserProfile from "@frontend/components/pages/EditUserProfile";
 import PageNotFound from "@frontend/components/notifications/PageNotFound";
 import Spinner from "@frontend/components/shared/Spinner";
 import MainLayout from "@frontend/components/layout/MainLayout";
@@ -94,6 +95,7 @@ function App() {
                 <Route path="/friends" element={<Friends />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/explore" element={<Explore />} />
+                <Route path="/edit-profile" element={<EditUserProfile />} />
               </Route>
 
               <Route path="*" element={<PageNotFound />} />

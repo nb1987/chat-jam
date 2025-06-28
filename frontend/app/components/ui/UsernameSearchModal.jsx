@@ -50,31 +50,6 @@ export default function UsernameSearchModal({ open, onClose }) {
     }
   };
 
-  const handleSearch = async (username) => {
-    try {
-      setSearchState((state) => ({
-        ...state,
-        isSearching: true,
-      }));
-      const result = await usersService.searchUserByUsername(username);
-      setSearchState((state) => ({
-        ...state,
-        searchedUser: result,
-        isSearching: false,
-        hasSearched: true,
-      }));
-    } catch (err) {
-      console.error(err);
-      if (!abortController.signal.aborted) {
-        console.error(err);
-        setSearchState((state) => ({
-          ...state,
-          error: "Unexpected error while loading data",
-        }));
-      }
-    }
-  };
-
   if (searchState.error) {
     return <ErrorPage text={searchState.error} />;
   }
@@ -108,10 +83,7 @@ export default function UsernameSearchModal({ open, onClose }) {
               </div>
 
               <div className="mt-6 flex flex-col items-center justify-center gap-2 px-4 sm:px-6 mb-5">
-                <UsernameSearchForm
-                  searchState={searchState}
-                  handleSearch={handleSearch}
-                />
+                <UsernameSearchForm setSearchState={setSearchState} />
               </div>
               <div>
                 <SearchResult

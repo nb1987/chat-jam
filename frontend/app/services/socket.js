@@ -6,6 +6,6 @@ export const joinRoom = (roomId) => {
   socket.emit("joinRoom", roomId);
 };
 
-export const sendMsg = (roomId, msgString, senderId) => {
-  socket.emit("sendMsg", { roomId, msgString, senderId });
+export const sendMsg = (roomId, text, senderId) => {
+  socket.emit("sendMsg", { roomId, text, senderId });
 };

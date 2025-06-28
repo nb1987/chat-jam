@@ -25,7 +25,7 @@ export default function SearchResult({
                   ${
                     friendState.isFriend
                       ? "opacity-50 pointer-events-none"
-                      : "cursor-pointer hover:bg-gray-100"
+                      : "cursor-pointer"
                   }`}
             >
               {!friendState.isFriend && (
@@ -35,7 +35,9 @@ export default function SearchResult({
             </div>
           </div>
         ) : (
-          <p className="text-red-500 font-semibold">User not found</p>
+          <p className="text-red-500 font-semibold text-center">
+            User not found
+          </p>
         ))}
     </div>
   );

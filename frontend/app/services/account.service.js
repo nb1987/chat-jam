@@ -5,15 +5,8 @@ class AccountService {
     this.client = new Client(abortController, authContext);
   }
 
-  async createUserAccount(email, password, username, userImgSrc, city, state) {
-    const data = await this.client.post("/api/accounts/signup", {
-      email,
-      password,
-      username,
-      userImgSrc,
-      city,
-      state,
-    });
+  async createUserAccount(formData) {
+    const data = await this.client.post("/api/accounts/signup", formData);
     return data;
   }
 
@@ -39,6 +32,15 @@ class AccountService {
 
   async getUserFriends() {
     const data = await this.client.get(`/api/accounts/user/friends`);
+    return data;
+  }
+
+  async editUserAccount(formData) {
+    const data = await this.client.patch(
+      "/api/accounts/edit-profile",
+      formData
+    );
+
     return data;
   }
 }

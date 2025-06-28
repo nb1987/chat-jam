@@ -56,3 +56,28 @@ export async function insertMsg(roomId, text, senderId) {
   const result = await pool.query(q, [roomId, text, senderId]);
   return result.rows[0];
 }
+
+export async function getChatFriendsInfo(userId) {
+  const q = `
+    SELECT 
+      u.id, 
+      u.username, 
+      u.userImgSrc,
+      m.text AS "lastMsg",
+      m.created_at AS "lastMsgAt"
+    FROM users u 
+    JOIN chat_rooms cr
+      ON (u.id = cr.user1_id AND cr.user2_id = $1)
+      OR (u.id = cr.user2_id AND cr.user1_id = $1)
+    LEFT JOIN LATERAL (
+      SELECT text, created_at
+      FROM messages
+      WHERE room_id = cr.id
+      ORDER BY created_at DESC
+      LIMIT 1
+    ) m ON true
+    WHERE u.id != $1
+  `;
+  const result = await pool.query(q, [userId]);
+  return Array.isArray(result.rows) ? result.rows : [];
+}

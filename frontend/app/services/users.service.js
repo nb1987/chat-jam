@@ -6,12 +6,12 @@ class UsersService {
   }
 
   async exploreUsers() {
-    const data = await this.client.get(`/api/users/user/others`);
+    const data = await this.client.get(`/api/users/explore`);
     return data;
   }
 
   async addFriend(friendId) {
-    const data = await this.client.post(`/api/users/user/${friendId}`);
+    const data = await this.client.post(`/api/users/add-friend/${friendId}`);
     return data;
   }
 

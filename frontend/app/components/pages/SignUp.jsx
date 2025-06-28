@@ -7,6 +7,7 @@ import Button from "@frontend/components/shared/Button";
 import Label from "@frontend/components/shared/Label";
 import AccountService from "@frontend/services/account.service";
 import AuthContext from "@frontend/contexts/auth-context";
+import toast from "react-hot-toast";
 
 const inputStyle =
   "block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-gray-800 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6";
@@ -16,7 +17,6 @@ const selectStyle =
 const buttonStyle =
   "rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
 
-// pop error message when image upload fails (file extension & file size)
 export default function SignUp() {
   const {
     register,
@@ -28,46 +28,49 @@ export default function SignUp() {
     document.title = "Sign up - ChatJam";
   }, []);
 
-  const [userImgSrc, setUserImgSrc] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const authContext = useContext(AuthContext);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]; // temp file in this function.
+    setSelectedFile(file);
 
     if (file) {
+      const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+
+      if (!validTypes.includes(file.type)) {
+        toast.error("Only JPG, JPEG and PNG files are allowed.");
+        return;
+      }
       if (file.size > 1024 * 1024) {
-        alert("File is too large. Max size is 1MB.");
+        toast.error("File is too large. Max size is 1MB.");
         return;
       }
     }
     if (!file) return;
-
-    const reader = new FileReader(); // file reading object is created
-
-    reader.onloadend = () => {
-      setUserImgSrc(reader.result);
-    }; // fires when reading is finished. 'reader.result' is encoded string of the file.
-    reader.readAsDataURL(file); // read the file and encode it.
   };
 
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
   }; // simulate a click on the 'input' element.
 
-  //
-  const handleSignUp = async (
-    email,
-    password,
-    username,
-    userImgSrc,
-    city,
-    state
-  ) => {
+  const handleSignUp = async (email, password, username, city, state) => {
     setIsProcessing(true);
+
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    formData.append("username", username);
+    formData.append("city", city);
+    formData.append("state", state);
+
+    if (selectedFile) {
+      formData.append("userImgSrc", selectedFile);
+    }
 
     const accountService = new AccountService(
       new AbortController(),
@@ -75,15 +78,7 @@ export default function SignUp() {
     );
 
     try {
-      const result = await accountService.createUserAccount(
-        email,
-        password,
-        username,
-        userImgSrc,
-        city,
-        state
-      );
-
+      const result = await accountService.createUserAccount(formData);
       authContext.setAccessToken(result.accessToken);
       navigate("/friends", { replace: true });
     } catch (err) {
@@ -94,9 +89,8 @@ export default function SignUp() {
   };
 
   const onSubmit = ({ email, password, username, city, state }) => {
-    handleSignUp(email, password, username, userImgSrc, city, state);
+    handleSignUp(email, password, username, city, state);
   };
-  //
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -106,21 +100,12 @@ export default function SignUp() {
           className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 sm:max-w-xl"
         >
           <div className="col-span-full flex items-center gap-x-8">
-            {userImgSrc ? (
-              <img
-                alt="user image"
-                src={userImgSrc}
-                className="size-24 flex-none rounded-lg bg-gray-800 object-cover"
-              />
-            ) : (
-              <UserCircleIcon className="w-24 h-24 text-gray-400" />
-            )}
+            <UserCircleIcon className="w-24 h-24 text-gray-400" />
 
             <input
               ref={fileInputRef}
               type="file"
               name="userImgSrc"
-              value={userImgSrc}
               accept="image/*"
               onChange={handleImageChange}
               className="hidden"

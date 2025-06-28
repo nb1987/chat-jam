@@ -89,7 +89,7 @@ export default function ExploredUserProfile({ searchedUser }) {
               onClick={() => {
                 setStartChatRoom(true);
               }}
-              className="relative inline-flex w-0 flex-1 items-center justify-center gap-x-3 rounded-br-lg border border-transparent py-4 text-sm font-semibold text-gray-900"
+              className="relative inline-flex w-0 flex-1 items-center justify-center gap-x-3 rounded-br-lg border border-transparent py-4 text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100"
             >
               <ChatBubbleBottomCenterIcon
                 aria-hidden="true"

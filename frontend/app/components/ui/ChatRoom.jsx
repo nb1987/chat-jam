@@ -17,11 +17,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     ? jwtDecode(authContext.accessToken)
     : null;
 
-  const {
-    id: friendId,
-    username: friendName,
-    userImgSrc: friendImg,
-  } = friendObj;
+  const { id: friendId, username: friendName } = friendObj;
 
   const [roomState, setRoomState] = useState({
     isLoading: false,
@@ -33,6 +29,8 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     myInfo: {},
   });
 
+  const [isRoomReady, setIsRoomReady] = useState(false);
+
   const chatHistoryBottomRef = useRef(null);
 
   useEffect(() => {
@@ -40,23 +38,23 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     const accountService = new AccountService(abortController, authContext);
     const chatService = new ChatService(abortController, authContext);
 
-    const startChatRoom = async () => {
+    const prepareChatRoom = async () => {
       try {
         setRoomState((state) => ({ ...state, isLoading: true }));
-        const myData = await accountService.getUserInfo(); // {id, username, image}
+        const myData = await accountService.getUserInfo();
         const chatRoomId = await chatService.getChatRoomId(friendId);
         const chatHistory = await chatService.getChatHistory(chatRoomId);
 
         setRoomState((state) => ({
           ...state,
           isLoading: false,
-          rooId: chatRoomId,
+          roomId: chatRoomId,
           msgHistory: chatHistory,
           myInfo: myData,
         }));
-        joinRoom(chatRoomId);
 
-        console.log(roomState.myInfo.id); // undefined📍📍📍📍📍
+        setIsRoomReady(true);
+        joinRoom(chatRoomId);
       } catch (err) {
         if (!abortController.signal.aborted) {
           console.error(err);
@@ -69,7 +67,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
       }
     };
 
-    startChatRoom();
+    prepareChatRoom();
 
     return () => {
       abortController.abort();
@@ -83,29 +81,38 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   }, [roomState.msgHistory]);
 
   const handleSend = () => {
+    if (!isRoomReady || !roomState.myInfo?.id) return;
+
     const currentText = roomState.text;
+    const senderId = roomState.myInfo.id || decodedUser.id;
+
+    sendMsg(roomState.roomId, currentText, senderId);
 
     setRoomState((state) => ({
       ...state,
-      msgHistory: [...state.msgHistory, currentText],
       text: "",
       isTyping: false,
     }));
-
-    sendMsg(roomState.roomId, currentText, roomState.myInfo.id); //📍📍📍
   };
 
   // insertedMsg = { room_id, user_id, text, created_at }
-  socket.on("msgToRoom", async (insertedMsg) => {
-    const { room_id, user_id } = insertedMsg;
-    if (user_id === roomState.myInfo.id) return; // only accept friend's msg.
-    if (room_id !== roomState.roomId) return;
+  useEffect(() => {
+    const handleNewMsg = (insertedMsg) => {
+      const { room_id } = insertedMsg;
 
-    setRoomState((state) => ({
-      ...state,
-      msgHistory: [...roomState.msgHistory, insertedMsg],
-    }));
-  });
+      setRoomState((state) => {
+        if (room_id !== state.roomId) return state;
+
+        return {
+          ...state,
+          msgHistory: [...state.msgHistory, insertedMsg],
+        };
+      });
+    };
+
+    socket.on("msgToRoom", handleNewMsg);
+    return () => socket.off("msgToRoom", handleNewMsg);
+  }, []);
 
   if (roomState.isLoading || !decodedUser) {
     return <Spinner />;
@@ -131,7 +138,9 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
              bg-white px-4 pt-4 pb-3 text-left rounded-lg shadow-xl flex flex-col"
             >
               <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold">Chat with {friendId}</h2>
+                <h2 className="text-lg font-semibold">
+                  Chat with {friendName}
+                </h2>
                 <button
                   onClick={closeModal}
                   className="text-gray-400 hover:text-gray-500"
@@ -139,17 +148,20 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                   <XMarkIcon className="size-5" />
                 </button>
               </div>
-              List of messages
+
+              {/* list of messages */}
               <div className="flex-1 overflow-y-auto space-y-2 px-1">
                 {roomState.msgHistory.map((msg, i) => (
                   <MessageBubble
                     key={i}
-                    message={msg}
+                    msg={msg}
                     myInfo={roomState.myInfo}
+                    friendInfo={friendObj}
                   />
                 ))}
                 <div ref={chatHistoryBottomRef} />
               </div>
+
               <div className="mt-3 flex items-end gap-2 border-t pt-3">
                 <textarea
                   rows={1}
@@ -188,12 +200,6 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
           </div>
         </div>
       </Dialog>
-
-      {/* {messages.map((msg, idx) => (
-        <div key={idx}>
-          {msg.sender === userId ? "You" : "Friend"}: {msg.message}
-        </div>
-      ))} */}
     </div>
   );
 }

@@ -50,31 +50,6 @@ export default function EmailSearchModal({ open, onClose }) {
     }
   };
 
-  const handleSearch = async (email) => {
-    try {
-      setSearchState((state) => ({
-        ...state,
-        isSearching: true,
-      }));
-      const result = await usersService.searchUserByEmail(email);
-      setSearchState((state) => ({
-        ...state,
-        searchedUser: result,
-        isSearching: false,
-        hasSearched: true,
-      }));
-    } catch (err) {
-      console.error(err);
-      if (!abortController.signal.aborted) {
-        console.error(err);
-        setSearchState((state) => ({
-          ...state,
-          error: "Unexpected error while loading data",
-        }));
-      }
-    }
-  };
-
   if (searchState.error) {
     return <ErrorPage text={searchState.error} />;
   }
@@ -107,16 +82,13 @@ export default function EmailSearchModal({ open, onClose }) {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col items-center justify-center gap-2 px-4 sm:px-6 mb-5">
-                <EmailSearchForm
-                  searchState={searchState}
-                  handleSearch={handleSearch}
-                />
+              <div className="mt-6 flex flex-col gap-2 px-2 sm:px-2 mb-5">
+                <EmailSearchForm setSearchState={setSearchState} />
               </div>
               <div>
                 <SearchResult
-                  searchState={searchState}
                   friendState={friendState}
+                  searchState={searchState}
                   handleAddFriend={handleAddFriend}
                 />
               </div>

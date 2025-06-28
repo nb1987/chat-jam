@@ -59,12 +59,9 @@ export default function SearchUserModal({
                 >
                   <EnvelopeIcon className="h-7 w-7 text-gray-700" />
 
-                  <button
-                    type="submit"
-                    className="inline-flex justify-center text-sm font-semibold text-gray-700"
-                  >
+                  <div className="inline-flex justify-center text-sm font-semibold text-gray-700">
                     with email
-                  </button>
+                  </div>
                 </div>
                 <div
                   className="pt-6 sm:pb-0.5 flex flex-col items-center justify-center gap-2 py-4 cursor-pointer"
@@ -74,12 +71,9 @@ export default function SearchUserModal({
                 >
                   <UserCircleIcon className="h-7 w-7 text-gray-700" />
 
-                  <button
-                    type="submit"
-                    className="inline-flex justify-center text-sm font-semibold text-gray-700"
-                  >
+                  <div className="inline-flex justify-center text-sm font-semibold text-gray-700">
                     with username
-                  </button>
+                  </div>
                 </div>
               </div>
             </DialogPanel>

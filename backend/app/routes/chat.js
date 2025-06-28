@@ -1,9 +1,10 @@
 import express from "express";
 import {
   fetchChatRoomHistory,
+  getChatFriendsInfo,
   getOrCreateRoomId,
 } from "../services/chat-service.js";
-import { authenticateToken } from "../mddleware/auth.middleware.js";
+import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -18,9 +19,22 @@ router.get("/history/:roomId", authenticateToken, async (req, res) => {
   }
 });
 
+router.get("/chat-friends", authenticateToken, async (req, res) => {
+  try {
+    const chatFriends = await getChatFriendsInfo(req.user.id);
+    res.status(200).json(chatFriends);
+  } catch (err) {
+    console.error("message error,", err.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch friends with chat history" });
+  }
+});
+
 router.get("/:friendId", authenticateToken, async (req, res) => {
   try {
     const { friendId } = req.params;
+
     const roomId = await getOrCreateRoomId(req.user.id, friendId);
     res.status(200).json(roomId);
   } catch (err) {
@@ -28,16 +42,5 @@ router.get("/:friendId", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Failed to get room id" });
   }
 });
-
-// router.post("/insert-msg", authenticateToken, async (req, res) => {
-//   try {
-//     const { roomId, text, senderId, createdAt } = req.body;
-//     const insertedMsgObj = await insertMsg(roomId, text, senderId, createdAt);
-//     res.status(201).json(insertedMsgObj);
-//   } catch (err) {
-//     console.error("message error,", err.message);
-//     res.status(500).json({ error: "Failed to insert message" });
-//   }
-// });
 
 export default router;

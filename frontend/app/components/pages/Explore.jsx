@@ -47,7 +47,7 @@ export default function Explore() {
     return () => {
       abortController.abort();
     };
-  }, []);
+  }, [authContext]);
 
   return (
     <>
