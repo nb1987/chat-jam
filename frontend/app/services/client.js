@@ -33,8 +33,6 @@ class Client {
 
     // store new tokens
     Cookies.set("refreshToken", newRefresh, {
-      secure: true,
-      sameSite: "Strict",
       expires: 14,
     });
 
@@ -45,29 +43,29 @@ class Client {
   }
 
   async get(endpoint) {
-    const response = await this.axios.get(endpoint);
+    const response = await this.makeRequest(async () => await this.axios.get(endpoint));
     return response.data;
   }
 
   async post(endpoint, payload) {
-    const response = await this.axios.post(endpoint, payload);
+    const response = await this.makeRequest(async () => await this.axios.post(endpoint, payload));
     return response.data;
   }
 
   async patch(endpoint, payload) {
-    const response = await this.axios.patch(endpoint, payload);
+    const response = await this.makeRequest(async () => await this.axios.patch(endpoint, payload));
     return response.data;
   }
 
   async delete(endpoint, payload) {
-    const response = await this.axios.delete(endpoint, payload);
+    const response = await this.makeRequest(async () => await this.axios.delete(endpoint, payload));
     return response.data;
   }
 
   async makeRequest(requestFn, isRetry = false) {
     try {
       const res = await requestFn();
-      return res.data;
+      return res;
     } catch (err) {
       const isUnauthorized = err.response?.status === 401;
 

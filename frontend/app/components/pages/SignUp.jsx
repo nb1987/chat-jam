@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { usStates } from "@frontend/utils/selectOptons";
 import { useNavigate } from "react-router-dom";
 import { ChevronDownIcon, UserCircleIcon } from "@heroicons/react/24/solid";
+import Cookies from "js-cookie";
 import Button from "@frontend/components/shared/Button";
 import Label from "@frontend/components/shared/Label";
 import AccountService from "@frontend/services/account.service";
@@ -85,6 +86,7 @@ export default function SignUp() {
       );
 
       authContext.setAccessToken(result.accessToken);
+      Cookies.set("refreshToken", result.refreshToken, { expires: 14 });
       navigate("/friends", { replace: true });
     } catch (err) {
       console.error(err);
@@ -120,7 +122,6 @@ export default function SignUp() {
               ref={fileInputRef}
               type="file"
               name="userImgSrc"
-              value={userImgSrc}
               accept="image/*"
               onChange={handleImageChange}
               className="hidden"

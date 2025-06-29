@@ -3,7 +3,7 @@ import {
   fetchChatRoomHistory,
   getOrCreateRoomId,
 } from "../services/chat-service.js";
-import { authenticateToken } from "../mddleware/auth.middleware.js";
+import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 

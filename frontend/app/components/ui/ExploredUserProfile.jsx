@@ -47,10 +47,10 @@ export default function ExploredUserProfile({ searchedUser }) {
             {city}, {state}
           </p>
         </div>
-        {userImgSrc ? (
+        {userimgsrc ? (
           <img
             alt="user image"
-            src={userImgSrc}
+            src={userimgsrc}
             className="size-14 shrink-0 rounded-full bg-gray-300"
           />
         ) : (

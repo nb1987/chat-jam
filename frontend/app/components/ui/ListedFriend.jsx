@@ -1,16 +1,16 @@
 import { UserIcon } from "@heroicons/react/24/solid";
 
 export default function ListedFriend({ person }) {
-  const { username, userImgSrc } = person;
+  const { username, userimgsrc } = person;
 
   return (
     <div className="grid grid-cols-1 gap-4">
       <div className="relative flex items-center space-x-3 bg-white px-6 py-2">
         <div className="shrink-0">
-          {userImgSrc ? (
+          {userimgsrc ? (
             <img
               alt="user image"
-              src={userImgSrc}
+              src={userimgsrc}
               className="size-10 rounded-full"
             />
           ) : (

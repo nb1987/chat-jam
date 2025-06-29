@@ -5,11 +5,11 @@ import {
   searchUserByEmail,
   searchUserByUsername,
 } from "../services/users-service.js";
-import { authenticateToken } from "../mddleware/auth.middleware.js";
+import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/user/others", authenticateToken, async (req, res) => {
+router.get("/explore", authenticateToken, async (req, res) => {
   try {
     const usersData = await exploreUsers(req.user.id);
 
@@ -45,7 +45,7 @@ router.get("/search-by-username/:username", async (req, res) => {
   }
 });
 
-router.post("/user/:friendId", authenticateToken, async (req, res) => {
+router.post("/add-friend/:friendId", authenticateToken, async (req, res) => {
   try {
     const { friendId } = req.params;
     await addFriend(req.user.id, friendId);

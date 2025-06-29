@@ -8,7 +8,7 @@ export function authenticateToken(req, res, next) {
 
   if (!authHeader?.startsWith("Bearer ")) return res.sendStatus(401);
 
-  jwt.verify(token, process.env.JWT_SECRET || 'play him off, keyboard cat!', (err, decodedUser) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decodedUser) => {
     if (err) return res.sendStatus(403);
     console.log(err);
 

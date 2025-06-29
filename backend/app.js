@@ -3,7 +3,7 @@ import http from "http";
 import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import fileUpload from "express-fileupload";
+
 import "dotenv/config";
 import { fileURLToPath } from "url";
 import { Server as SocketIOServer } from "socket.io";
@@ -32,16 +32,10 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
-  fileUpload({
-    limits: { fileSize: 1 * 1024 * 1024 },
-  })
-);
-
-app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
   })
 );
 
@@ -66,7 +60,6 @@ io.on("connection", (socket) => {
     socket.join(roomId);
   });
 
-  //
   socket.on("sendMsg", async ({ roomId, text, senderId }) => {
     try {
       const insertedMsg = await insertMsg(roomId, text, senderId);

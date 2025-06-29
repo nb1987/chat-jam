@@ -24,26 +24,26 @@ export function generateTokens(account) {
   return {
     accessToken: jwt.sign(
       { ...data, tokenType: "access" },
-      process.env.JWT_SECRET || 'play him off, keyboard cat!',
+      process.env.JWT_SECRET,
       { expiresIn: "1d" }
     ),
     refreshToken: jwt.sign(
       { id: account.id, tokenType: "refresh" },
-      process.env.JWT_SECRET || 'play him off, keyboard cat!',
+      process.env.JWT_SECRET,
       { expiresIn: "30d" }
     ),
   };
 }
 
 export function verifyAccessToken(token) {
-  return jwt.verify(token, process.env.JWT_SECRET || 'play him off, keyboard cat!');
+  return jwt.verify(token, process.env.JWT_SECRET);
 }
 
 const verifyToken = promisify(jwt.verify);
 
 export async function getUserFromToken(token) {
   try {
-    const user = await verifyToken(token, process.env.JWT_SECRET || 'play him off, keyboard cat!');
+    const user = await verifyToken(token, process.env.JWT_SECRET);
 
     if (user.tokenType !== "refresh") {
       throw new Error("Invalid token type");

@@ -35,10 +35,10 @@ export default function Profile({ userInfo, dialogOpens, setDialogOpens }) {
                 </div>
               </div>
               <div className="mt-6 flex flex-col items-center justify-center gap-2 px-4 sm:px-6">
-                {userImgSrc ? (
+                {userimgsrc ? (
                   <img
                     alt="user image"
-                    src={userImgSrc}
+                    src={userimgsrc}
                     className="size-16 rounded-full"
                   />
                 ) : (

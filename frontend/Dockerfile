@@ -16,6 +16,4 @@ COPY . .
 EXPOSE 5173
 
 # Run Vite dev server
-# ENTRYPOINT ["tail", "-f", "/dev/null"]
-
 CMD ["npm", "run", "dev"]
