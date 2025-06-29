@@ -29,13 +29,6 @@ router.post("/signup", async (req, res) => {
     const createdUser = await createAccount(payload, imageUrl);
     const tokens = generateTokens({ id: createdUser.id });
 
-    res.cookie("refreshToken", tokens.refreshToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
     res.status(201).json({
       message: "Account created successfully",
       id: createdUser.id,
@@ -76,13 +69,6 @@ router.post("/login", async (req, res) => {
       const tokens = generateTokens({ id: loggedInUser.id });
 
       res.setHeader("Authorization", `Bearer ${tokens.accessToken}`);
-
-      res.cookie("refreshToken", tokens.refreshToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
 
       res.status(200).json({
         message: "Logged in successfully",
