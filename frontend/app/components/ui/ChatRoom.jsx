@@ -105,10 +105,11 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     const { room_id, user_id } = insertedMsg;
     if (user_id === roomState.myInfo.id) return; // only accept friend's msg.
     if (room_id !== roomState.roomId) return;
-
+  
     setRoomState((state) => ({
       ...state,
-      msgHistory: [...roomState.msgHistory, insertedMsg],
+      // in case the socket receives the same message multiple times, ensure it doesn't add duplicates in the chat window
+      msgHistory: state.msgHistory.some(msg => msg.id === insertedMsg.id) ? state.msgHistory : [...state.msgHistory, insertedMsg],
     }));
   });
 
@@ -136,7 +137,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
              bg-white px-4 pt-4 pb-3 text-left rounded-lg shadow-xl flex flex-col"
             >
               <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold">Chat with {friendId}</h2>
+                <h2 className="text-lg font-semibold">Chat with {friendName}</h2>
                 <button
                   onClick={closeModal}
                   className="text-gray-400 hover:text-gray-500"

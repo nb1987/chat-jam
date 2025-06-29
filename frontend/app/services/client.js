@@ -7,7 +7,6 @@ class Client {
     this.abortController = abortController;
     this.authContext = authContext;
     this.axios = axios.create({
-      withCredentials: true, //cookies are sent.
       signal: this.abortController.signal, // allow request abortion.
       headers: {},
     });
@@ -25,8 +24,7 @@ class Client {
 
     const res = await axios.post(
       "/api/accounts/refresh-tokens",
-      { refreshToken },
-      { withCredentials: true }
+      { refreshToken }
     );
 
     const { accessToken, refreshToken: newRefresh } = res.data;

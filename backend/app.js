@@ -63,7 +63,7 @@ io.on("connection", (socket) => {
   socket.on("sendMsg", async ({ roomId, text, senderId }) => {
     try {
       const insertedMsg = await insertMsg(roomId, text, senderId);
-      io.to(roomId).emit("msgToRoom", insertedMsg);
+      socket.to(roomId).emit("msgToRoom", insertedMsg);
     } catch (err) {
       console.error("Failed to insert message:", err.message);
       socket.emit("msgError", "Failed to send message");

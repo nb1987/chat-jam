@@ -68,12 +68,11 @@ router.post("/login", async (req, res) => {
       const loggedInUser = await getUserInfoByEmail(email.trim());
       const tokens = generateTokens({ id: loggedInUser.id });
 
-      res.setHeader("Authorization", `Bearer ${tokens.accessToken}`);
-
       res.status(200).json({
         message: "Logged in successfully",
         id: loggedInUser.id,
         accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken
       });
     }
   } catch (err) {
