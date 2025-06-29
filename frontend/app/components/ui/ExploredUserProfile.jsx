@@ -10,7 +10,7 @@ import AuthContext from "@frontend/contexts/auth-context";
 import ChatRoom from "@frontend/components/ui/ChatRoom";
 
 export default function ExploredUserProfile({ searchedUser }) {
-  const { id: friendId, username, userImgSrc, city, state } = searchedUser;
+  const { id: friendId, username, userimgsrc, city, state } = searchedUser;
   const authContext = useContext(AuthContext);
 
   const [isAddingFriend, setIsAddingFriend] = useState(false);

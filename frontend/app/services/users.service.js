@@ -6,7 +6,7 @@ class UsersService {
   }
 
   async exploreUsers() {
-    const data = await this.client.get(`/api/users/user/others`);
+    const data = await this.client.get(`/api/users/explore`);
     return data;
   }
 
