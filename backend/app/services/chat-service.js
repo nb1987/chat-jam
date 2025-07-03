@@ -50,7 +50,7 @@ export async function insertMsg(roomId, text, senderId) {
   const q = `
     INSERT INTO messages (room_id, text, user_id)
     VALUES ($1, $2, $3)
-    RETURNING room_id, user_id, text, created_at
+    RETURNING id, room_id, user_id, text, created_at
   `;
 
   const result = await pool.query(q, [roomId, text, senderId]);
@@ -62,7 +62,7 @@ export async function getChatFriendsInfo(userId) {
     SELECT 
       u.id, 
       u.username, 
-      u.userImgSrc,
+      u.userImgSrc AS "userImgSrc",
       m.text AS "lastMsg",
       m.created_at AS "lastMsgAt"
     FROM users u 

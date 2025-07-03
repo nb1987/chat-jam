@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { usStates } from "@frontend/utils/selectOptons";
 import { useNavigate } from "react-router-dom";
 import { ChevronDownIcon, UserCircleIcon } from "@heroicons/react/24/solid";
+import Cookies from "js-cookie";
 import Button from "@frontend/components/shared/Button";
 import Label from "@frontend/components/shared/Label";
 import AccountService from "@frontend/services/account.service";
@@ -17,7 +18,7 @@ const selectStyle =
 const buttonStyle =
   "rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
 
-export default function SignUp() {
+export default function SignUp({ onSuccessfulLogin }) {
   const {
     register,
     handleSubmit,
@@ -78,8 +79,9 @@ export default function SignUp() {
     );
 
     try {
-      const result = await accountService.createUserAccount(formData);
-      authContext.setAccessToken(result.accessToken);
+      const { tokenPair } = await accountService.createUserAccount(formData);
+      authContext.setAccessToken(tokenPair.accessToken);
+      onSuccessfulLogin(tokenPair);
       navigate("/friends", { replace: true });
     } catch (err) {
       console.error(err);

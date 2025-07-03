@@ -105,7 +105,11 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
         return {
           ...state,
-          msgHistory: [...state.msgHistory, insertedMsg],
+          msgHistory: state.msgHistory.some((msg) => msg.id === insertedMsg.id)
+            ? state.msgHistory
+            : [...state.msgHistory, insertedMsg],
+          // / in case the socket receives the same message multiple times, ensure it doesn't add duplicates in the chat window
+          // msgHistory: [...state.msgHistory, insertedMsg],
         };
       });
     };

@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
@@ -9,6 +9,10 @@ import Friends from "@frontend/components/pages/Friends";
 import Chat from "@frontend/components/pages/Chat";
 import Explore from "@frontend/components/pages/Explore";
 import EditUserProfile from "@frontend/components/pages/EditUserProfile";
+import ResetPassword from "@frontend/components/pages/ResetPassword";
+import UpdatePassword from "@frontend/components/pages/UpdatePassword";
+import AccountSettings from "@frontend/components/pages/AccountSettings";
+import AccountDeleted from "@frontend/components/pages/AccountDeleted";
 import PageNotFound from "@frontend/components/notifications/PageNotFound";
 import Spinner from "@frontend/components/shared/Spinner";
 import MainLayout from "@frontend/components/layout/MainLayout";
@@ -24,6 +28,13 @@ function App() {
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+  const publicRoutes = [
+    "/login",
+    "/signup",
+    "/reset-password",
+    "/update-password",
+  ];
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -57,7 +68,7 @@ function App() {
       }
     };
 
-    if (!accessToken) {
+    if (!accessToken && !publicRoutes.includes(location.pathname)) {
       restoreAccessToken();
     } else {
       setIsLoading(false);
@@ -67,6 +78,12 @@ function App() {
       abortController.abort();
     };
   }, []);
+
+  const loginHandler = (tokenPair) => {
+    Cookies.set("refreshToken", tokenPair.refreshToken, { expires: 14 });
+    setAccessToken(tokenPair.accessToken);
+    navigate("/friends");
+  };
 
   return (
     <AuthContext.Provider value={{ accessToken, setAccessToken }}>
@@ -79,23 +96,40 @@ function App() {
           ) : (
             <Routes>
               <Route
-                index
+                path="/"
                 element={
-                  accessToken ? (
-                    <Navigate to="/friends" replace />
-                  ) : (
+                  !accessToken &&
+                  !publicRoutes.some((route) =>
+                    location.pathname.startsWith(route)
+                  ) ? (
                     <Navigate to="/login" replace />
+                  ) : (
+                    <Navigate to="/friends" replace />
                   )
                 }
               />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
+
+              <Route
+                path="/login"
+                element={<Login onSuccessfulLogin={loginHandler} />}
+              />
+              <Route
+                path="/signup"
+                element={<SignUp onSuccessfulLogin={loginHandler} />}
+              />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route
+                path="/update-password"
+                element={<UpdatePassword onSuccessfulLogin={loginHandler} />}
+              />
+              <Route path="/account-deleted" element={<AccountDeleted />} />
 
               <Route element={<MainLayout />}>
                 <Route path="/friends" element={<Friends />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/edit-profile" element={<EditUserProfile />} />
+                <Route path="/account-settings" element={<AccountSettings />} />
               </Route>
 
               <Route path="*" element={<PageNotFound />} />

@@ -7,7 +7,7 @@ class Client {
     this.abortController = abortController;
     this.authContext = authContext;
     this.axios = axios.create({
-      withCredentials: true, //cookies are sent.
+      //withCredentials: true, //cookies are sent.
       signal: this.abortController.signal, // allow request abortion.
       headers: {},
     });
@@ -25,16 +25,16 @@ class Client {
 
     const res = await axios.post(
       "/api/accounts/refresh-tokens",
-      { refreshToken },
-      { withCredentials: true }
+      { refreshToken }
+      // { withCredentials: true }
     );
 
     const { accessToken, refreshToken: newRefresh } = res.data;
 
     // store new tokens
     Cookies.set("refreshToken", newRefresh, {
-      secure: true,
-      sameSite: "Strict",
+      // secure: true,
+      // sameSite: "Strict",
       expires: 14,
     });
 
@@ -45,29 +45,51 @@ class Client {
   }
 
   async get(endpoint) {
-    const response = await this.axios.get(endpoint);
+    // const response = await this.axios.get(endpoint);
+    const response = await this.makeRequest(
+      async () => await this.axios.get(endpoint)
+    );
     return response.data;
   }
 
   async post(endpoint, payload) {
-    const response = await this.axios.post(endpoint, payload);
+    const headers = {};
+
+    if (payload instanceof FormData) {
+      headers["Content-Type"] = "multipart/form-data";
+    }
+
+    const response = await this.makeRequest(
+      async () => await this.axios.post(endpoint, payload, { headers })
+    );
     return response.data;
   }
 
   async patch(endpoint, payload) {
-    const response = await this.axios.patch(endpoint, payload);
+    const headers = {};
+
+    if (payload instanceof FormData) {
+      headers["Content-Type"] = "multipart/form-data";
+    }
+
+    const response = await this.makeRequest(
+      async () => await this.axios.patch(endpoint, payload, { headers })
+    );
     return response.data;
   }
 
   async delete(endpoint, payload) {
-    const response = await this.axios.delete(endpoint, payload);
+    const config = payload ? { data: payload } : undefined;
+    const response = await this.makeRequest(
+      async () => await this.axios.delete(endpoint, config)
+    );
     return response.data;
   }
 
   async makeRequest(requestFn, isRetry = false) {
     try {
       const res = await requestFn();
-      return res.data;
+      return res;
     } catch (err) {
       const isUnauthorized = err.response?.status === 401;
 
@@ -80,6 +102,7 @@ class Client {
           throw refreshErr;
         }
       }
+      throw err;
     }
   }
 }

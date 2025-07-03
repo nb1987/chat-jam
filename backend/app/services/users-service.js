@@ -2,7 +2,7 @@ import pool from "../config/db.js";
 
 export async function getUserFriends(userId) {
   const q = `
-  SELECT u.id, u.username, u.userImgSrc 
+  SELECT u.id, u.username, u.userImgSrc AS "userImgSrc"
   FROM users u
   JOIN friends f ON 
     (u.id = f.user1_id AND f.user2_id = $1)
@@ -17,7 +17,7 @@ export async function getUserFriends(userId) {
 // exclude already-added users & self
 export async function exploreUsers(userId) {
   const q = `
-  SELECT id, username, userImgSrc, city, state 
+  SELECT id, username, userImgSrc AS "userImgSrc", city, state 
   FROM users u
   LEFT JOIN friends f
     ON (f.user1_id = $1 AND f.user2_id = u.id)
@@ -42,7 +42,7 @@ export async function addFriend(userId, friendId) {
 
 export async function searchUserByEmail(email) {
   const q = `
-  SELECT id, username, userImgSrc
+  SELECT id, username, userImgSrc AS "userImgSrc"
   FROM users 
   WHERE email = $1 
   `;
@@ -53,7 +53,7 @@ export async function searchUserByEmail(email) {
 
 export async function searchUserByUsername(username) {
   const q = `
-  SELECT id, username, userImgSrc
+  SELECT id, username, userImgSrc AS "userImgSrc"
   FROM users 
   WHERE username = $1 
   `;

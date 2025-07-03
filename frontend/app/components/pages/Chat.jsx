@@ -5,6 +5,7 @@ import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import Spinner from "@frontend/components/shared/Spinner";
 import ChatService from "@frontend/services/chat.service";
 import ChatRoom from "@frontend/components/ui/ChatRoom";
+import { UserIcon } from "@heroicons/react/24/solid";
 
 export default function Chat() {
   const authContext = useContext(AuthContext);
@@ -83,11 +84,21 @@ export default function Chat() {
               className="flex flex-col gap-1 p-4 hover:bg-gray-100 cursor-pointer "
             >
               <div className="flex items-center gap-4">
-                <img
-                  src={friend.userImgSrc || "📍📍/default-avatar.png"}
-                  alt="profile"
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                {friend.userImgSrc ? (
+                  <img
+                    alt="user image"
+                    src={friend.userImgSrc.replace(
+                      "/upload/",
+                      "/upload/w_100,h_100,c_fill,f_auto,q_auto/"
+                    )}
+                    className="size-14 shrink-0 rounded-full bg-gray-300"
+                  />
+                ) : (
+                  <span className="inline-flex items-center justify-center size-14 rounded-full bg-gray-100">
+                    <UserIcon className="h-10 w-10 text-gray-500" />
+                  </span>
+                )}
+
                 <div className="flex-1">
                   <div className="text-lg font-semibold">{friend.username}</div>
 

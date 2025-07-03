@@ -191,7 +191,7 @@ export default function EditUserProfile() {
             <Label htmlFor="username" labelText="Username" />
             <input
               type="text"
-              value={page.userData.username}
+              defaultValue={page.userData.username}
               id="username"
               name="username"
               {...register("username", {
@@ -208,7 +208,7 @@ export default function EditUserProfile() {
             <Label htmlFor="city" labelText="City" />
             <input
               type="city"
-              value={page.userData.city}
+              defaultValue={page.userData.city}
               id="city"
               name="city"
               {...register("city", {

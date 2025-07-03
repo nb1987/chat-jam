@@ -1,6 +1,9 @@
-import { Menu } from "@headlessui/react";
+import { Menu, MenuItem } from "@headlessui/react";
 import { MenuItems, MenuButton } from "@headlessui/react";
-import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowRightStartOnRectangleIcon,
+  LockClosedIcon,
+} from "@heroicons/react/24/outline";
 import { Cog8ToothIcon } from "@heroicons/react/24/solid";
 import { useContext } from "react";
 import Cookies from "js-cookie";
@@ -25,15 +28,34 @@ export default function SettingsPanel() {
         </MenuButton>
 
         <MenuItems className="absolute right-0 mt-2 w-48 bg-white shadow-md rounded-md z-10 outline-none">
-          <div className="p-2 hover:bg-gray-50">
-            <div
-              onClick={handleLogout}
-              className="flex items-center cursor-pointer"
-            >
-              <ArrowRightStartOnRectangleIcon className="h-6 w-6 text-gray-600" />
-              <span className="ml-2">Sign out</span>
+          <MenuItem>
+            {({ close }) => (
+              <div className="p-2 hover:bg-gray-50">
+                <div
+                  onClick={() => {
+                    close();
+                    navigate("/account-settings");
+                  }}
+                  className="flex items-center cursor-pointer"
+                >
+                  <LockClosedIcon className="h-6 w-6 text-gray-600" />
+                  <span className="ml-2">Account Settings</span>
+                </div>
+              </div>
+            )}
+          </MenuItem>
+
+          <MenuItem>
+            <div className="p-2 hover:bg-gray-50">
+              <div
+                onClick={handleLogout}
+                className="flex items-center cursor-pointer"
+              >
+                <ArrowRightStartOnRectangleIcon className="h-6 w-6 text-gray-600" />
+                <span className="ml-2">Sign out</span>
+              </div>
             </div>
-          </div>
+          </MenuItem>
         </MenuItems>
       </Menu>
     </>

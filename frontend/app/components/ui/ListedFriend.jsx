@@ -10,7 +10,10 @@ export default function ListedFriend({ person }) {
           {userImgSrc ? (
             <img
               alt="user image"
-              src={userImgSrc}
+              src={userImgSrc.replace(
+                "/upload/",
+                "/upload/w_100,h_100,c_fill,f_auto,q_auto/"
+              )}
               className="size-10 rounded-full"
             />
           ) : (

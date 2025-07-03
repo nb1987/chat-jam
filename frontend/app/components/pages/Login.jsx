@@ -1,10 +1,12 @@
 import { useEffect, useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import Cookies from "js-cookie";
 import AuthContext from "@frontend/contexts/auth-context";
 import AccountService from "@frontend/services/account.service";
 import Button from "@frontend/components/shared/Button";
 import Label from "@frontend/components/shared/Label";
+import ErrorPage from "../notifications/ErrorPage";
 
 const inputStyle =
   "block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-gray-800 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6";
@@ -14,7 +16,7 @@ const buttonStyle =
 // alert user when the pw is wrong
 //* email should be unique! check in the DB */
 
-export default function Login() {
+export default function Login({ onSuccessfulLogin }) {
   const navigate = useNavigate();
   const {
     register,
@@ -29,6 +31,7 @@ export default function Login() {
   const authContext = useContext(AuthContext);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (email, password) => {
     setIsProcessing(true);
@@ -39,11 +42,14 @@ export default function Login() {
     );
 
     try {
-      const result = await accountService.loginUser(email, password);
-      authContext.setAccessToken(result.accessToken);
+      const { tokenPair } = await accountService.loginUser(email, password);
+      authContext.setAccessToken(tokenPair.accessToken);
+      onSuccessfulLogin(tokenPair);
       navigate("/friends", { replace: true });
     } catch (err) {
-      console.error(err);
+      console.error("Login failed", err);
+      const errorMsg = err?.response?.data?.error;
+      setError(errorMsg || "Unexpected error");
     } finally {
       setIsProcessing(false);
     }
@@ -57,7 +63,7 @@ export default function Login() {
     <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
         <img
-          alt="Your Company"
+          alt="ChatJam logo"
           src="/chatjam_with_text.png"
           className="mx-auto h-25 w-auto"
         />
@@ -133,14 +139,21 @@ export default function Login() {
             Not a member?{" "}
           </Link>
 
-          <a
-            href="#"
+          <Link
+            to="/reset-password"
             className="font-semibold text-orange-400 hover:text-orange-600"
           >
             Forgot password?
-          </a>
+          </Link>
         </div>
       </div>
+      {error && (
+        <div className="text-center">
+          <p className="mt-6 text-lg font-medium text-pretty text-red-500 sm:text-xl/8">
+            {error || "An unexpected error occurred."}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

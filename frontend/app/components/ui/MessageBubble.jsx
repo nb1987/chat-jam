@@ -16,13 +16,21 @@ export default function MessageBubble({ msg, myInfo, friendInfo }) {
         isItMe ? "justify-end" : "justify-start"
       }`}
     >
-      {!isItMe && (
-        <img
-          src={profileImg}
-          alt="profile image"
-          className="w-8 h-8 rounded-full mr-2"
-        />
-      )}
+      {!isItMe &&
+        (profileImg ? (
+          <img
+            alt="user image"
+            src={profileImg.replace(
+              "/upload/",
+              "/upload/w_100,h_100,c_fill,f_auto,q_auto/"
+            )}
+            className="size-8 shrink-0 rounded-full mr-2"
+          />
+        ) : (
+          <span className="inline-flex items-center justify-center size-14 rounded-full bg-gray-100">
+            <UserIcon className="h-10 w-10 text-gray-500" />
+          </span>
+        ))}
 
       <div>
         <div
@@ -48,13 +56,21 @@ export default function MessageBubble({ msg, myInfo, friendInfo }) {
         </div>
       </div>
 
-      {isItMe && (
-        <img
-          src={profileImg}
-          alt="profile"
-          className="w-8 h-8 rounded-full ml-2"
-        />
-      )}
+      {isItMe &&
+        (profileImg ? (
+          <img
+            alt="user image"
+            src={profileImg.replace(
+              "/upload/",
+              "/upload/w_100,h_100,c_fill,f_auto,q_auto/"
+            )}
+            className="size-8 shrink-0 rounded-full ml-2"
+          />
+        ) : (
+          <span className="inline-flex items-center justify-center size-14 rounded-full bg-gray-100">
+            <UserIcon className="h-10 w-10 text-gray-500" />
+          </span>
+        ))}
     </div>
   );
 }

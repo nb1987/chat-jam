@@ -6,7 +6,9 @@ CREATE TABLE users (
   password TEXT NOT NULL, 
   userImgSrc TEXT,
   city TEXT NOT NULL,
-  state TEXT NOT NULL
+  state TEXT NOT NULL,
+  password_reset_token TEXT,
+  password_reset_requested_at TIMESTAMP
 );
 
 CREATE TABLE chat_rooms (
@@ -14,7 +16,6 @@ CREATE TABLE chat_rooms (
   created_at TIMESTAMP DEFAULT NOW(),
   user1_id INT REFERENCES users(id) ON DELETE CASCADE,
   user2_id INT REFERENCES users(id) ON DELETE CASCADE,
-  
   user_low INT GENERATED ALWAYS AS (LEAST(user1_id, user2_id)) STORED,
   user_high INT GENERATED ALWAYS AS (GREATEST(user1_id, user2_id)) STORED,
 
