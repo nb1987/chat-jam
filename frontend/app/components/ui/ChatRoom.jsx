@@ -30,8 +30,8 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   });
 
   const [isRoomReady, setIsRoomReady] = useState(false);
-
   const chatHistoryBottomRef = useRef(null);
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -93,6 +93,10 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
       text: "",
       isTyping: false,
     }));
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
   };
 
   // insertedMsg = { room_id, user_id, text, created_at }
@@ -105,7 +109,11 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
         return {
           ...state,
-          msgHistory: [...state.msgHistory, insertedMsg],
+          msgHistory: state.msgHistory.some((msg) => msg.id === insertedMsg.id)
+            ? state.msgHistory
+            : [...state.msgHistory, insertedMsg],
+          // / in case the socket receives the same message multiple times, ensure it doesn't add duplicates in the chat window
+          // msgHistory: [...state.msgHistory, insertedMsg],
         };
       });
     };
@@ -113,6 +121,17 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     socket.on("msgToRoom", handleNewMsg);
     return () => socket.off("msgToRoom", handleNewMsg);
   }, []);
+
+  const onLocalMsgDelete = (msgId) => {
+    setRoomState((state) => ({
+      ...state,
+      msgHistory: state.msgHistory.map((m) =>
+        m.id === msgId
+          ? { ...m, is_deleted: true, text: "This message is deleted" }
+          : m
+      ),
+    }));
+  };
 
   if (roomState.isLoading || !decodedUser) {
     return <Spinner />;
@@ -149,7 +168,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                 </button>
               </div>
 
-              {/* list of messages */}
+              {/* list of messages & each msg has msg obj. */}
               <div className="flex-1 overflow-y-auto space-y-2 px-1">
                 {roomState.msgHistory.map((msg, i) => (
                   <MessageBubble
@@ -157,6 +176,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                     msg={msg}
                     myInfo={roomState.myInfo}
                     friendInfo={friendObj}
+                    onLocalMsgDelete={onLocalMsgDelete}
                   />
                 ))}
                 <div ref={chatHistoryBottomRef} />
@@ -164,6 +184,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
               <div className="mt-3 flex items-end gap-2 border-t pt-3">
                 <textarea
+                  ref={textareaRef}
                   rows={1}
                   value={roomState.text}
                   onChange={(e) => {

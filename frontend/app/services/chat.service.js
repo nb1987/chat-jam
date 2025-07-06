@@ -19,6 +19,13 @@ class ChatService {
     const data = await this.client.get(`/api/chat/chat-friends`);
     return data;
   }
+
+  async DeleteMessage(messageId) {
+    const data = await this.client.patch(
+      `/api/chat/delete-message/${messageId}`
+    );
+    return data;
+  }
 }
 
 export default ChatService;

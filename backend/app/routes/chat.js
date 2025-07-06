@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  deleteMessage,
   fetchChatRoomHistory,
   getChatFriendsInfo,
   getOrCreateRoomId,
@@ -42,5 +43,20 @@ router.get("/:friendId", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Failed to get room id" });
   }
 });
+
+router.patch(
+  "/delete-message/:messageId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const deletedMsg = await deleteMessage(messageId);
+      res.status(201).json(deletedMsg);
+    } catch (err) {
+      console.error("delete error,", err.message);
+      res.status(500).json({ error: "Failed to delete the requested message" });
+    }
+  }
+);
 
 export default router;

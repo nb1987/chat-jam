@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { usStates } from "@frontend/utils/selectOptons";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { ChevronDownIcon, UserCircleIcon } from "@heroicons/react/24/solid";
 import Button from "@frontend/components/shared/Button";
 import Label from "@frontend/components/shared/Label";
 import AccountService from "@frontend/services/account.service";
 import AuthContext from "@frontend/contexts/auth-context";
-import toast from "react-hot-toast";
 
 const inputStyle =
   "block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-gray-800 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6";
@@ -17,7 +17,9 @@ const selectStyle =
 const buttonStyle =
   "rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
 
-export default function SignUp() {
+// user can know if the email already exists while typing.
+
+export default function SignUp({ onSuccessfulLogin }) {
   const {
     register,
     handleSubmit,
@@ -30,6 +32,7 @@ export default function SignUp() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   const authContext = useContext(AuthContext);
   const fileInputRef = useRef(null);
@@ -50,9 +53,20 @@ export default function SignUp() {
         toast.error("File is too large. Max size is 1MB.");
         return;
       }
+
+      const preview = URL.createObjectURL(file);
+      setPreviewUrl(preview);
     }
     if (!file) return;
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
@@ -78,8 +92,9 @@ export default function SignUp() {
     );
 
     try {
-      const result = await accountService.createUserAccount(formData);
-      authContext.setAccessToken(result.accessToken);
+      const { tokenPair } = await accountService.createUserAccount(formData);
+      authContext.setAccessToken(tokenPair.accessToken);
+      onSuccessfulLogin(tokenPair);
       navigate("/friends", { replace: true });
     } catch (err) {
       console.error(err);
@@ -100,7 +115,15 @@ export default function SignUp() {
           className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 sm:max-w-xl"
         >
           <div className="col-span-full flex items-center gap-x-8">
-            <UserCircleIcon className="w-24 h-24 text-gray-400" />
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="Profile image preview"
+                className="w-24 h-24 rounded-full object-cover"
+              />
+            ) : (
+              <UserCircleIcon className="w-24 h-24 text-gray-400" />
+            )}
 
             <input
               ref={fileInputRef}
@@ -181,12 +204,12 @@ export default function SignUp() {
             {errors.password?.type === "required" && (
               <p className="text-red-500">Please enter password.</p>
             )}
-            {errors.password?.type === "minLength" ||
-              (errors.password?.type === "maxLength" && (
-                <p className="text-red-500">
-                  Password must be between 6 and 12 characters.
-                </p>
-              ))}
+            {(errors.password?.type === "minLength" ||
+              errors.password?.type === "maxLength") && (
+              <p className="text-red-500">
+                Password must be between 6 and 12 characters.
+              </p>
+            )}
           </div>
 
           <div className="sm:col-span-3">

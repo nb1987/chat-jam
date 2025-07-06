@@ -1,6 +1,7 @@
 import { useEffect, useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import AuthContext from "@frontend/contexts/auth-context";
 import AccountService from "@frontend/services/account.service";
 import Button from "@frontend/components/shared/Button";
@@ -11,10 +12,7 @@ const inputStyle =
 const buttonStyle =
   "flex w-full justify-center rounded-md bg-orange-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-orange-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600";
 
-// alert user when the pw is wrong
-//* email should be unique! check in the DB */
-
-export default function Login() {
+export default function Login({ onSuccessfulLogin }) {
   const navigate = useNavigate();
   const {
     register,
@@ -39,11 +37,13 @@ export default function Login() {
     );
 
     try {
-      const result = await accountService.loginUser(email, password);
-      authContext.setAccessToken(result.accessToken);
+      const { tokenPair } = await accountService.loginUser(email, password);
+      authContext.setAccessToken(tokenPair.accessToken);
+      onSuccessfulLogin(tokenPair);
       navigate("/friends", { replace: true });
     } catch (err) {
-      console.error(err);
+      const errorMsg = err?.response?.data?.error || err.message;
+      toast.error(errorMsg || "Unexpected error");
     } finally {
       setIsProcessing(false);
     }
@@ -57,7 +57,7 @@ export default function Login() {
     <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
         <img
-          alt="Your Company"
+          alt="ChatJam logo"
           src="/chatjam_with_text.png"
           className="mx-auto h-25 w-auto"
         />
@@ -105,12 +105,12 @@ export default function Login() {
             {errors.password?.type === "required" && (
               <p className="text-red-500">Please enter password.</p>
             )}
-            {errors.password?.type === "minLength" ||
-              (errors.password?.type === "maxLength" && (
-                <p className="text-red-500">
-                  Password must be between 6 and 12 characters.
-                </p>
-              ))}
+            {(errors.password?.type === "minLength" ||
+              errors.password?.type === "maxLength") && (
+              <p className="text-red-500">
+                Password must be between 6 and 12 characters.
+              </p>
+            )}
           </div>
 
           <div>
@@ -133,12 +133,12 @@ export default function Login() {
             Not a member?{" "}
           </Link>
 
-          <a
-            href="#"
+          <Link
+            to="/reset-password"
             className="font-semibold text-orange-400 hover:text-orange-600"
           >
             Forgot password?
-          </a>
+          </Link>
         </div>
       </div>
     </div>

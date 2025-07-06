@@ -2,7 +2,7 @@ import pool from "../config/db.js";
 
 export async function fetchChatRoomHistory(roomId) {
   const q = `
-SELECT room_id, user_id, text, created_at
+SELECT id, room_id, user_id, text, created_at, is_deleted
 FROM messages
 WHERE room_id = $1
 ORDER BY created_at ASC
@@ -50,7 +50,7 @@ export async function insertMsg(roomId, text, senderId) {
   const q = `
     INSERT INTO messages (room_id, text, user_id)
     VALUES ($1, $2, $3)
-    RETURNING room_id, user_id, text, created_at
+    RETURNING id, room_id, user_id, text, created_at
   `;
 
   const result = await pool.query(q, [roomId, text, senderId]);
@@ -62,7 +62,7 @@ export async function getChatFriendsInfo(userId) {
     SELECT 
       u.id, 
       u.username, 
-      u.userImgSrc,
+      u.userImgSrc AS "userImgSrc",
       m.text AS "lastMsg",
       m.created_at AS "lastMsgAt"
     FROM users u 
@@ -79,5 +79,16 @@ export async function getChatFriendsInfo(userId) {
     WHERE u.id != $1
   `;
   const result = await pool.query(q, [userId]);
+  return Array.isArray(result.rows) ? result.rows : [];
+}
+
+export async function deleteMessage(messageId) {
+  const q = `
+    UPDATE messages
+      SET text = 'This message is deleted.', is_deleted = true
+    WHERE id = $1
+    RETURNING id, text, is_deleted
+  `;
+  const result = await pool.query(q, [messageId]);
   return Array.isArray(result.rows) ? result.rows : [];
 }
