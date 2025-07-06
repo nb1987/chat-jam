@@ -43,6 +43,10 @@ export default function UpdatePassword({ onSuccessfulLogin }) {
     setIsProcessing(false);
   };
 
+  if (error) {
+      return <ErrorPage text={error} />;
+    }
+  
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
@@ -96,12 +100,12 @@ export default function UpdatePassword({ onSuccessfulLogin }) {
             {errors.email?.type === "required" && (
               <p className="text-red-500">Please enter new password.</p>
             )}
-            {errors.password?.type === "minLength" ||
-              (errors.password?.type === "maxLength" && (
+            {(errors.password?.type === "minLength" ||
+              errors.password?.type === "maxLength") && (
                 <p className="text-red-500">
                   Password must be between 6 and 12 characters.
                 </p>
-              ))}
+              )}
             {errors.confirmPassword && (
               <p className="text-red-500">{errors.confirmPassword.message}</p>
             )}
@@ -117,7 +121,7 @@ export default function UpdatePassword({ onSuccessfulLogin }) {
             </div>
           </form>
         )}
-        {error && <ErrorPage text={error} />}
+       
       </div>
     </div>
   );

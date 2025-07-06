@@ -8,11 +8,11 @@ import {
 import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import { jwtDecode } from "jwt-decode";
 import Cookies from "js-cookie";
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import Spinner from "@frontend/components/shared/Spinner";
 import AuthContext from "@frontend/contexts/auth-context";
-import ErrorPage from "@frontend/components/notifications/ErrorPage";
+import toast from "react-hot-toast";
 
 export default function ConfirmationModal({
   isDeleting,
@@ -20,7 +20,6 @@ export default function ConfirmationModal({
   deleteAccountModalOpens,
   onClose,
 }) {
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   const authContext = useContext(AuthContext);
   const accountService = new AccountService(new AbortController(), authContext);
@@ -39,7 +38,7 @@ export default function ConfirmationModal({
       navigate("/account-deleted");
     } catch (err) {
       const errorMsg = err?.response?.data?.error;
-      setError(errorMsg || "Unexpected error");
+      toast.error(errorMsg || "Unexpected error");
     }
     setIsDeleting(false);
   };
@@ -110,8 +109,6 @@ export default function ConfirmationModal({
           </div>
         </div>
       </Dialog>
-
-      {error && <ErrorPage text={error} />}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
-import Label from "../shared/Label";
 import { useState } from "react";
-import Button from "../shared/Button";
+import Label from "@frontend/components/shared/Label";
+import Button from "@frontend/components/shared/Button";
 import AccountService from "@frontend/services/account.service";
 
 const inputStyle =

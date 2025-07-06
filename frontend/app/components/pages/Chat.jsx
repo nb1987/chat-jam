@@ -1,11 +1,11 @@
 import { jwtDecode } from "jwt-decode";
 import { useContext, useEffect, useState } from "react";
+import { UserIcon } from "@heroicons/react/24/solid";
 import AuthContext from "@frontend/contexts/auth-context";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import Spinner from "@frontend/components/shared/Spinner";
 import ChatService from "@frontend/services/chat.service";
 import ChatRoom from "@frontend/components/ui/ChatRoom";
-import { UserIcon } from "@heroicons/react/24/solid";
 
 export default function Chat() {
   const authContext = useContext(AuthContext);

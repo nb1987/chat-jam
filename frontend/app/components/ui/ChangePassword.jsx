@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useContext } from "react";
 import { useForm } from "react-hook-form";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
@@ -6,7 +6,6 @@ import AccountService from "@frontend/services/account.service";
 import AuthContext from "@frontend/contexts/auth-context";
 import Label from "@frontend/components/shared/Label";
 import Button from "@frontend/components/shared/Button";
-import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import Spinner from "@frontend/components/shared/Spinner";
 
 const inputStyle =
@@ -19,8 +18,6 @@ export default function ChangePassword({
   setIsUpdatingPw,
   onClose,
 }) {
-  const [error, setError] = useState("");
-
   const {
     register,
     handleSubmit,
@@ -44,7 +41,7 @@ export default function ChangePassword({
       onClose();
     } catch (err) {
       const errorMsg = err?.response?.data?.error;
-      setError(errorMsg || "Unexpected error");
+      toast.error(errorMsg || "Unexpected error");
     }
     setIsUpdatingPw(false);
   };
@@ -85,12 +82,12 @@ export default function ChangePassword({
         {errors.email?.type === "required" && (
           <p className="text-red-500">Please enter new password.</p>
         )}
-        {errors.password?.type === "minLength" ||
-          (errors.password?.type === "maxLength" && (
-            <p className="text-red-500">
-              Password must be between 6 and 12 characters.
-            </p>
-          ))}
+        {(errors.password?.type === "minLength" ||
+          errors.password?.type === "maxLength") && (
+          <p className="text-red-500">
+            Password must be between 6 and 12 characters.
+          </p>
+        )}
         {errors.confirmPassword && (
           <p className="text-red-500">{errors.confirmPassword.message}</p>
         )}
@@ -105,8 +102,6 @@ export default function ChangePassword({
           </Button>
         </div>
       </form>
-
-      {error && <ErrorPage text={error} />}
     </div>
   );
 }

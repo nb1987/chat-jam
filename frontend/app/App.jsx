@@ -12,7 +12,7 @@ import EditUserProfile from "@frontend/components/pages/EditUserProfile";
 import ResetPassword from "@frontend/components/pages/ResetPassword";
 import UpdatePassword from "@frontend/components/pages/UpdatePassword";
 import AccountSettings from "@frontend/components/pages/AccountSettings";
-import AccountDeleted from "@frontend/components/pages/AccountDeleted";
+import AccountDeleted from "@frontend/components/notifications/AccountDeleted";
 import PageNotFound from "@frontend/components/notifications/PageNotFound";
 import Spinner from "@frontend/components/shared/Spinner";
 import MainLayout from "@frontend/components/layout/MainLayout";

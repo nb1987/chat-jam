@@ -40,6 +40,7 @@ export default function EditUserProfile() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -94,9 +95,19 @@ export default function EditUserProfile() {
         toast.error("File is too large. Max size is 1MB.");
         return;
       }
+      const preview = URL.createObjectURL(file);
+      setPreviewUrl(preview);
     }
     if (!file) return;
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
@@ -147,18 +158,24 @@ export default function EditUserProfile() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-3xl mt-12">
+      <div className="w-full max-w-3xl">
         <form
           onSubmit={handleSubmit(onSubmit)}
           encType="multipart/form-data"
           className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 sm:max-w-xl"
         >
           <div className="col-span-full flex items-center gap-x-8">
-            {page.userData.userImgSrc ? (
+            {previewUrl ? (
+              <img
+                alt="preview"
+                src={previewUrl}
+                className="size-26 rounded-full object-cover"
+              />
+            ) : page.userData.userImgSrc ? (
               <img
                 alt="user image"
                 src={page.userData.userImgSrc}
-                className="size-26 flex-none rounded-lg bg-gray-800 object-cover"
+                className="size-26 rounded-full object-cover"
               />
             ) : (
               <UserCircleIcon className="size-26 text-gray-400" />

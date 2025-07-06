@@ -28,7 +28,9 @@ CREATE TABLE messages (
   room_id INT REFERENCES chat_rooms(id) ON DELETE CASCADE,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,
   text TEXT NOT NULL
-);
+  is_deleted BOOLEAN DEFAULT false
+
+); 
 
 CREATE INDEX index_msg_room_created ON messages (room_id, created_at)
 

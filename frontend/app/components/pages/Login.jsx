@@ -1,20 +1,16 @@
 import { useEffect, useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import Cookies from "js-cookie";
+import toast from "react-hot-toast";
 import AuthContext from "@frontend/contexts/auth-context";
 import AccountService from "@frontend/services/account.service";
 import Button from "@frontend/components/shared/Button";
 import Label from "@frontend/components/shared/Label";
-import ErrorPage from "../notifications/ErrorPage";
 
 const inputStyle =
   "block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-gray-800 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-gray-500 sm:text-sm/6";
 const buttonStyle =
   "flex w-full justify-center rounded-md bg-orange-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-orange-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600";
-
-// alert user when the pw is wrong
-//* email should be unique! check in the DB */
 
 export default function Login({ onSuccessfulLogin }) {
   const navigate = useNavigate();
@@ -31,7 +27,6 @@ export default function Login({ onSuccessfulLogin }) {
   const authContext = useContext(AuthContext);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState("");
 
   const handleLogin = async (email, password) => {
     setIsProcessing(true);
@@ -47,9 +42,8 @@ export default function Login({ onSuccessfulLogin }) {
       onSuccessfulLogin(tokenPair);
       navigate("/friends", { replace: true });
     } catch (err) {
-      console.error("Login failed", err);
-      const errorMsg = err?.response?.data?.error;
-      setError(errorMsg || "Unexpected error");
+      const errorMsg = err?.response?.data?.error || err.message;
+      toast.error(errorMsg || "Unexpected error");
     } finally {
       setIsProcessing(false);
     }
@@ -111,12 +105,12 @@ export default function Login({ onSuccessfulLogin }) {
             {errors.password?.type === "required" && (
               <p className="text-red-500">Please enter password.</p>
             )}
-            {errors.password?.type === "minLength" ||
-              (errors.password?.type === "maxLength" && (
-                <p className="text-red-500">
-                  Password must be between 6 and 12 characters.
-                </p>
-              ))}
+            {(errors.password?.type === "minLength" ||
+              errors.password?.type === "maxLength") && (
+              <p className="text-red-500">
+                Password must be between 6 and 12 characters.
+              </p>
+            )}
           </div>
 
           <div>
@@ -147,13 +141,6 @@ export default function Login({ onSuccessfulLogin }) {
           </Link>
         </div>
       </div>
-      {error && (
-        <div className="text-center">
-          <p className="mt-6 text-lg font-medium text-pretty text-red-500 sm:text-xl/8">
-            {error || "An unexpected error occurred."}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

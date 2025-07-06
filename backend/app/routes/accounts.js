@@ -34,7 +34,6 @@ router.post("/signup", upload.single("userImgSrc"), async (req, res) => {
     const createdUser = await createAccount(payload, userImgSrc);
 
     const tokens = generateTokens({ id: createdUser.id });
-    //res.setHeader("Authorization", `Bearer ${tokens.accessToken}`);
 
     res.status(201).json({
       message: "Account created successfully",
@@ -74,13 +73,13 @@ router.post("/login", async (req, res) => {
       const loggedInUser = await getUserInfoByEmail(email.trim());
       const tokens = generateTokens({ id: loggedInUser.id });
 
-      // res.setHeader("Authorization", `Bearer ${tokens.accessToken}`);
-
       res.status(200).json({
         message: "Logged in successfully",
         id: loggedInUser.id,
         tokenPair: tokens,
       });
+    } else {
+      res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (err) {
     console.error("Login error,", err.message);
