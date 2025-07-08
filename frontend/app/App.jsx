@@ -25,6 +25,7 @@ import { socket as socketInstance } from "@frontend/services/socket";
 function App() {
   const [accessToken, setAccessToken] = useState(null);
   const [socket, setSocket] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -88,7 +89,9 @@ function App() {
   return (
     <AuthContext.Provider value={{ accessToken, setAccessToken }}>
       <FriendsContext.Provider value={{ friends, setFriends }}>
-        <SocketContext.Provider value={{ socket, setSocket }}>
+        <SocketContext.Provider
+          value={{ socket, setSocket, unreadCount, setUnreadCount }}
+        >
           <Toaster position="top-center" reverseOrder={false} />
 
           {isLoading ? (

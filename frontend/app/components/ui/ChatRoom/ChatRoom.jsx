@@ -1,18 +1,27 @@
 import { useState, useEffect, useRef, useContext } from "react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/solid";
 import { jwtDecode } from "jwt-decode";
 
-import { socket, joinRoom, sendMsg } from "@frontend/services/socket";
-import MessageBubble from "@frontend/components/ui/MessageBubble";
+import { joinRoom, socket } from "@frontend/services/socket";
+import useMsgToRoomHook from "./useMsgToRoomHook";
+import MessageBubble from "@frontend/components/ui/ChatRoom/MessageBubble";
 import AuthContext from "@frontend/contexts/auth-context";
 import AccountService from "@frontend/services/account.service";
 import ChatService from "@frontend/services/chat.service";
 import Spinner from "@frontend/components/shared/Spinner";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
+import ChatHeader from "./ChatHeader";
+import MessageInput from "./MessageInput";
+import useScrollToBottomHook from "./useScrollToBottomHook";
+import useEmitUnreadMsgHook from "@frontend/components/ui/ChatRoom/useEmitUnreadMsgHook";
+import useReceiveReadMsgHook from "./useReceiveReadMsgHook";
+import useSocketErrorHook from "./useSocketErrorHook";
+import useSocketDisconnectAlert from "./useSocketDisconnectAlert";
+import SocketContext from "@frontend/contexts/socket-context";
 
 export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   const authContext = useContext(AuthContext);
+  const { setUnreadCount } = useContext(SocketContext);
   const decodedUser = authContext.accessToken
     ? jwtDecode(authContext.accessToken)
     : null;
@@ -24,14 +33,40 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     error: null,
     roomId: "",
     msgHistory: [],
-    text: "",
-    isTyping: false,
     myInfo: {},
   });
 
   const [isRoomReady, setIsRoomReady] = useState(false);
   const chatHistoryBottomRef = useRef(null);
-  const textareaRef = useRef(null);
+  const userExitedOnPurpose = useRef(false); // state처럼 렌더링에 영향을 안 줌,
+
+  useEffect(() => {
+    userExitedOnPurpose.current = false;
+  }, []);
+
+  useEffect(() => {
+    setUnreadCount((state) => ({
+      ...state,
+      [roomState.roomId]: 0,
+    }));
+  }, []); // 다른 방들은 안 읽은 메시지 개수를 유지함.
+
+  useMsgToRoomHook(roomState.roomId, setRoomState);
+  useEmitUnreadMsgHook(
+    roomState.msgHistory,
+    roomState.roomId,
+    roomState.myInfo.id
+  );
+  useReceiveReadMsgHook(setRoomState, roomState.roomId);
+  useScrollToBottomHook(chatHistoryBottomRef, roomState.msgHistory);
+  useSocketErrorHook();
+  useSocketDisconnectAlert(userExitedOnPurpose);
+
+  const handleLeaveRoom = () => {
+    userExitedOnPurpose.current = true;
+    socket.disconnect();
+    closeModal();
+  };
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -74,54 +109,6 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     };
   }, []);
 
-  useEffect(() => {
-    setTimeout(() => {
-      chatHistoryBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 0);
-  }, [roomState.msgHistory]);
-
-  const handleSend = () => {
-    if (!isRoomReady || !roomState.myInfo?.id) return;
-
-    const currentText = roomState.text;
-    const senderId = roomState.myInfo.id || decodedUser.id;
-
-    sendMsg(roomState.roomId, currentText, senderId);
-
-    setRoomState((state) => ({
-      ...state,
-      text: "",
-      isTyping: false,
-    }));
-
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-  };
-
-  // insertedMsg = { room_id, user_id, text, created_at }
-  useEffect(() => {
-    const handleNewMsg = (insertedMsg) => {
-      const { room_id } = insertedMsg;
-
-      setRoomState((state) => {
-        if (room_id !== state.roomId) return state;
-
-        return {
-          ...state,
-          msgHistory: state.msgHistory.some((msg) => msg.id === insertedMsg.id)
-            ? state.msgHistory
-            : [...state.msgHistory, insertedMsg],
-          // / in case the socket receives the same message multiple times, ensure it doesn't add duplicates in the chat window
-          // msgHistory: [...state.msgHistory, insertedMsg],
-        };
-      });
-    };
-
-    socket.on("msgToRoom", handleNewMsg);
-    return () => socket.off("msgToRoom", handleNewMsg);
-  }, []);
-
   const onLocalMsgDelete = (msgId) => {
     setRoomState((state) => ({
       ...state,
@@ -156,17 +143,10 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
               className="relative w-[90%] max-w-md h-[80vh] sm:min-h-[28rem] 
              bg-white px-4 pt-4 pb-3 text-left rounded-lg shadow-xl flex flex-col"
             >
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold">
-                  Chat with {friendName}
-                </h2>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <XMarkIcon className="size-5" />
-                </button>
-              </div>
+              <ChatHeader
+                friendName={friendName}
+                closeModal={handleLeaveRoom}
+              />
 
               {/* list of messages & each msg has msg obj. */}
               <div className="flex-1 overflow-y-auto space-y-2 px-1">
@@ -182,41 +162,11 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                 <div ref={chatHistoryBottomRef} />
               </div>
 
-              <div className="mt-3 flex items-end gap-2 border-t pt-3">
-                <textarea
-                  ref={textareaRef}
-                  rows={1}
-                  value={roomState.text}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setRoomState((state) => ({
-                      ...state,
-                      text: value,
-                      isTyping: value.trim().length > 0,
-                    }));
-                  }}
-                  onInput={(e) => {
-                    e.target.style.height = "auto";
-                    e.target.style.height = `${e.target.scrollHeight}px`;
-                  }}
-                  className="flex-1 resize-none overflow-hidden rounded-md bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-gray-300"
-                  placeholder="Type a message..."
-                />
-
-                <button
-                  onClick={handleSend}
-                  className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold shadow-sm
-        ${
-          roomState.isTyping
-            ? "bg-orange-400 text-white hover:bg-orange-500"
-            : "bg-gray-300 text-gray-400 cursor-default"
-        }
-      `}
-                  disabled={!roomState.isTyping}
-                >
-                  Send
-                </button>
-              </div>
+              <MessageInput
+                roomId={roomState.roomId}
+                senderId={roomState.myInfo.id || decodedUser.id}
+                wrongConditon={!isRoomReady || !roomState.myInfo?.id}
+              />
             </DialogPanel>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { UserIcon } from "@heroicons/react/24/solid";
 import { ChatBubbleBottomCenterIcon } from "@heroicons/react/24/solid";
-import ChatRoom from "@frontend/components/ui/ChatRoom";
+import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
 
 export default function FriendProfile({
   userInfo,

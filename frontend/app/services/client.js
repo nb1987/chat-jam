@@ -59,9 +59,7 @@ class Client {
     }
 
     const response = await this.makeRequest(
-      async () => await this.axios.post(endpoint, payload, { headers }),
-      false,
-      endpoint
+      async () => await this.axios.post(endpoint, payload, { headers })
     );
     return response.data;
   }
@@ -87,18 +85,14 @@ class Client {
     return response.data;
   }
 
-  async makeRequest(requestFn, isRetry = false, endpoint = "") {
+  async makeRequest(requestFn, isRetry = false) {
     try {
       const res = await requestFn();
       return res;
     } catch (err) {
-      console.error("📍📍makeRequest failed", err);
-
       const isUnauthorized = err.response?.status === 401;
-      const isAuthRoute =
-        endpoint.includes("/login") || endpoint.includes("/signup");
 
-      if (!isRetry && isUnauthorized && !isAuthRoute) {
+      if (!isRetry && isUnauthorized) {
         try {
           await this.refreshAccessToken();
           return await this.makeRequest(requestFn, true);

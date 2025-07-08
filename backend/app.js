@@ -10,7 +10,7 @@ import { Server as SocketIOServer } from "socket.io";
 import accountRoutes from "./app/routes/accounts.js";
 import usersRoutes from "./app/routes/users.js";
 import chatRoutes from "./app/routes/chat.js";
-import { insertMsg } from "./app/services/chat-service.js";
+import socketHandler from "./app/services/socket-handler.js";
 
 const app = express();
 
@@ -53,27 +53,7 @@ app.use("/api/accounts", accountRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/chat", chatRoutes);
 
-io.on("connection", (socket) => {
-  console.log("Socket is connected: ", socket.id);
-
-  socket.on("joinRoom", (roomId) => {
-    socket.join(roomId);
-  });
-
-  socket.on("sendMsg", async ({ roomId, text, senderId }) => {
-    try {
-      const insertedMsg = await insertMsg(roomId, text, senderId);
-      io.to(roomId).emit("msgToRoom", insertedMsg);
-    } catch (err) {
-      console.error("Failed to insert message:", err.message);
-      socket.emit("msgError", "Failed to send message");
-    }
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
-});
+socketHandler(io);
 
 server.listen(PORT, () => {
   console.log(`🚩Server running on port ${PORT}`);
