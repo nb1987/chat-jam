@@ -20,7 +20,7 @@ CREATE TABLE chat_rooms (
   user_high INT GENERATED ALWAYS AS (GREATEST(user1_id, user2_id)) STORED,
 
   CONSTRAINT unique_room_pair UNIQUE (user_low, user_high)
-);
+); 
 -- ALTER TABLE messages ADD COLUMN is_read BOOLEAN DEFAULT false;
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,

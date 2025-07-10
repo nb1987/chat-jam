@@ -5,6 +5,7 @@ import {
   ChatBubbleOvalLeftIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
+//import UnreadContext from "@frontend/contexts/unread-context";
 
 export default function BottomNavigation() {
   const navigate = useNavigate();

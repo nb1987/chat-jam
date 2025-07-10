@@ -3,6 +3,8 @@ import { useEffect } from "react";
 
 export default function useReceiveReadMsgHook(setRoomState, roomId) {
   useEffect(() => {
+    if (!roomId) return;
+
     const handleReadMsg = (msgId) => {
       setRoomState((state) => ({
         ...state,
@@ -12,6 +14,7 @@ export default function useReceiveReadMsgHook(setRoomState, roomId) {
       }));
     };
     socket.on("receiveReadMsg", handleReadMsg);
+    console.log("📍Receiving event to handle read msg in front");
 
     return () => socket.off("receiveReadMsg", handleReadMsg);
   }, [setRoomState, roomId]);

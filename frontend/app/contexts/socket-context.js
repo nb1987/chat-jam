@@ -3,8 +3,7 @@ import React from "react";
 const SocketContext = React.createContext({
   socket: null,
   setSocket: () => {},
-  unreadCount: {},
-  setUnreadCount: () => {},
+  userExitedOnPurpose: { current: false },
 });
 
 export default SocketContext;

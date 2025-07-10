@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useContext } from "react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { jwtDecode } from "jwt-decode";
 
-import { joinRoom, socket } from "@frontend/services/socket";
+import { joinRoom, leaveRoom } from "@frontend/services/socket";
 import useMsgToRoomHook from "./useMsgToRoomHook";
 import MessageBubble from "@frontend/components/ui/ChatRoom/MessageBubble";
 import AuthContext from "@frontend/contexts/auth-context";
+import SocketContext from "@frontend/contexts/socket-context";
 import AccountService from "@frontend/services/account.service";
 import ChatService from "@frontend/services/chat.service";
 import Spinner from "@frontend/components/shared/Spinner";
@@ -16,12 +17,11 @@ import useScrollToBottomHook from "./useScrollToBottomHook";
 import useEmitUnreadMsgHook from "@frontend/components/ui/ChatRoom/useEmitUnreadMsgHook";
 import useReceiveReadMsgHook from "./useReceiveReadMsgHook";
 import useSocketErrorHook from "./useSocketErrorHook";
-import useSocketDisconnectAlert from "./useSocketDisconnectAlert";
-import SocketContext from "@frontend/contexts/socket-context";
+//import UnreadContext from "@frontend/contexts/unread-context";
 
 export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   const authContext = useContext(AuthContext);
-  const { setUnreadCount } = useContext(SocketContext);
+  const { userExitedOnPurpose } = useContext(SocketContext);
   const decodedUser = authContext.accessToken
     ? jwtDecode(authContext.accessToken)
     : null;
@@ -38,18 +38,10 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
   const [isRoomReady, setIsRoomReady] = useState(false);
   const chatHistoryBottomRef = useRef(null);
-  const userExitedOnPurpose = useRef(false); // state처럼 렌더링에 영향을 안 줌,
 
   useEffect(() => {
     userExitedOnPurpose.current = false;
   }, []);
-
-  useEffect(() => {
-    setUnreadCount((state) => ({
-      ...state,
-      [roomState.roomId]: 0,
-    }));
-  }, []); // 다른 방들은 안 읽은 메시지 개수를 유지함.
 
   useMsgToRoomHook(roomState.roomId, setRoomState);
   useEmitUnreadMsgHook(
@@ -60,11 +52,10 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   useReceiveReadMsgHook(setRoomState, roomState.roomId);
   useScrollToBottomHook(chatHistoryBottomRef, roomState.msgHistory);
   useSocketErrorHook();
-  useSocketDisconnectAlert(userExitedOnPurpose);
 
   const handleLeaveRoom = () => {
     userExitedOnPurpose.current = true;
-    socket.disconnect();
+    leaveRoom(roomState.roomId);
     closeModal();
   };
 
@@ -89,6 +80,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         }));
 
         setIsRoomReady(true);
+        console.log("📍room is ready", roomState.roomId);
         joinRoom(chatRoomId);
       } catch (err) {
         if (!abortController.signal.aborted) {

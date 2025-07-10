@@ -24,6 +24,7 @@ const io = new SocketIOServer(server, {
     credentials: true,
   },
 }); // create Socket.IO server
+socketHandler(io);
 const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
@@ -52,8 +53,6 @@ app.use((err, req, res, next) => {
 app.use("/api/accounts", accountRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/chat", chatRoutes);
-
-socketHandler(io);
 
 server.listen(PORT, () => {
   console.log(`🚩Server running on port ${PORT}`);

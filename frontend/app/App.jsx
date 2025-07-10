@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import Cookies from "js-cookie";
@@ -21,13 +21,14 @@ import FriendsContext from "@frontend/contexts/friends-context";
 import AuthContext from "@frontend/contexts/auth-context";
 import SocketContext from "@frontend/contexts/socket-context";
 import { socket as socketInstance } from "@frontend/services/socket";
+import useSocketDisconnectAlert from "./components/ui/ChatRoom/useSocketDisconnectAlert";
 
 function App() {
   const [accessToken, setAccessToken] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const userExitedOnPurpose = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
   const publicRoutes = [
@@ -36,6 +37,8 @@ function App() {
     "/reset-password",
     "/update-password",
   ];
+
+  useSocketDisconnectAlert();
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -51,6 +54,7 @@ function App() {
         } else {
           const tokenPair = await accountService.getTokenPair(refreshToken);
           setAccessToken(tokenPair.accessToken);
+          setSocket(socketInstance);
           setIsLoading(false);
         }
       } catch (err) {
@@ -90,7 +94,7 @@ function App() {
     <AuthContext.Provider value={{ accessToken, setAccessToken }}>
       <FriendsContext.Provider value={{ friends, setFriends }}>
         <SocketContext.Provider
-          value={{ socket, setSocket, unreadCount, setUnreadCount }}
+          value={{ socket, setSocket, userExitedOnPurpose }}
         >
           <Toaster position="top-center" reverseOrder={false} />
 

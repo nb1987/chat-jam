@@ -2,7 +2,7 @@ import { socket } from "@frontend/services/socket";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 
-export default function useMsgToRoomHook() {
+export default function useSocketErrorHook() {
   useEffect(() => {
     const handleMsgEror = (error) => {
       switch (error.code) {

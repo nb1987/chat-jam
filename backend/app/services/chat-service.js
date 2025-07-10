@@ -64,13 +64,15 @@ export async function getChatFriendsInfo(userId) {
       u.username, 
       u.userImgSrc AS "userImgSrc",
       m.text AS "lastMsg",
-      m.created_at AS "lastMsgAt"
+      m.created_at AS "lastMsgAt",
+      m.user_id AS "lastMsgSenderId",
+      m.is_read AS "lastMsgIsRead"
     FROM users u 
     JOIN chat_rooms cr
       ON (u.id = cr.user1_id AND cr.user2_id = $1)
       OR (u.id = cr.user2_id AND cr.user1_id = $1)
     LEFT JOIN LATERAL (
-      SELECT text, created_at
+      SELECT text, created_at, user_id, is_read
       FROM messages
       WHERE room_id = cr.id
       ORDER BY created_at DESC

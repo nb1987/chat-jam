@@ -13,8 +13,10 @@ export default function useEmitUnreadMsgHook(msgHistory, roomId, myId) {
   // 상대방이 보내준 메시지를 서버에게 읽었다고 알려야함.
 
   useEffect(() => {
+    if (!roomId) return;
     if (roomId && unreadMsgIds.length > 0) {
       socket.emit("sendUnreadMsg", { unreadMsgIds, roomId });
+      console.log("📍Emitting event to send unread msg in front");
     }
 
     // return () => socket.off("markAsRead"); 보내는 쪽은 이벤트 해제가 필요없음.
