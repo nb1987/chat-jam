@@ -10,7 +10,7 @@ export function authenticateToken(req, res, next) {
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decodedUser) => {
     if (err) return res.sendStatus(403);
-    console.log(err);
+    console.log("auth error:", err);
 
     req.user = decodedUser;
     next();

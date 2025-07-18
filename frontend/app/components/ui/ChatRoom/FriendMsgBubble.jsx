@@ -41,7 +41,9 @@ export default function FriendMsgBubble({
             )}
           </div>
           <span className="text-xs text-gray-500">
-            {format(new Date(createdAt), "HH:mm")}
+            {createdAt && !isNaN(new Date(createdAt))
+              ? format(new Date(createdAt), "HH:mm")
+              : "??:??"}
           </span>
         </div>
       </div>

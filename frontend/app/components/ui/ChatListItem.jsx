@@ -1,12 +1,12 @@
 import { UserIcon, EnvelopeIcon } from "@heroicons/react/24/solid";
 
 export default function ChatListItem({
-  friendLastMsgAt,
-  friendLastMsg,
+  lastMsgAt,
+  lastMsg,
   friendUsername,
   friendUserImgSrc,
   lastMsgSenderIsFriend,
-  msgIsUnreadByMe,
+  msgIsUnread,
 }) {
   return (
     <div className="flex items-center gap-4">
@@ -28,7 +28,7 @@ export default function ChatListItem({
       <div className="flex-1 items-center gap-x-1">
         <div className="flex">
           <span className="text-lg font-semibold">{friendUsername}</span>
-          {lastMsgSenderIsFriend && msgIsUnreadByMe && (
+          {lastMsgSenderIsFriend && msgIsUnread && (
             <span className="ml-2 pt-2">
               <EnvelopeIcon className="text-orange-500 size-4" />
             </span>
@@ -39,11 +39,11 @@ export default function ChatListItem({
             className="text-sm text-gray-500 truncate w-full
     max-w-[220px] sm:max-w-[280px] md:max-w-[360px] lg:max-w-[480px]"
           >
-            {friendLastMsg}
+            {lastMsg}
           </div>
           <div className="text-xs text-gray-400 whitespace-nowrap ml-4 shrink-0">
-            {friendLastMsgAt &&
-              new Date(friendLastMsgAt).toLocaleTimeString([], {
+            {lastMsgAt &&
+              new Date(lastMsgAt).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
               })}

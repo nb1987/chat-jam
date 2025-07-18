@@ -1,14 +1,15 @@
 import { socket } from "@frontend/services/socket";
 import { useEffect } from "react";
 
-export default function useMsgToRoomHook(roomId, setRoomState) {
-  // 실시간 메시지 수신 & 채팅 목록에 반영
+// msg that I sent to friend is saved in DB and came back to me
+// to update my UI.
+export default function useMsgToMeHook(roomId, setRoomState) {
+  // 내가 보낸 메시지가 db에 저장되어 돌아옴 => UI 업데이트
+
   useEffect(() => {
     if (!roomId) return;
 
     const handleNewMsg = (insertedMsg) => {
-      if (insertedMsg.room_id !== roomId) return;
-
       setRoomState((state) => ({
         ...state,
         msgHistory: state.msgHistory.some((m) => m.id === insertedMsg.id)
@@ -16,9 +17,9 @@ export default function useMsgToRoomHook(roomId, setRoomState) {
           : [...state.msgHistory, insertedMsg],
       }));
     };
-    socket.on("msgToRoom", handleNewMsg); // 메시지를 받는 이벤트가 발생함.
-    console.log("📍Receiving event to handle new msg in front");
 
-    return () => socket.off("msgToRoom", handleNewMsg);
-  }, [setRoomState, roomId]);
+    socket.on("msgToMe", handleNewMsg); // 메시지를 받는 이벤트가 발생함.
+
+    return () => socket.off("msgToMe", handleNewMsg);
+  }, [roomId, setRoomState]);
 }

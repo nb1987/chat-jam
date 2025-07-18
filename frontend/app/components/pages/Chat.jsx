@@ -1,15 +1,16 @@
 import { jwtDecode } from "jwt-decode";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import AuthContext from "@frontend/contexts/auth-context";
+import UnreadContext from "@frontend/contexts/unread-context";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import Spinner from "@frontend/components/shared/Spinner";
 import ChatService from "@frontend/services/chat.service";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
 import ChatListItem from "../ui/ChatListItem";
-
-// {id, username, userImgSrc, lastMsg,lastMsgAt, lastMsgSenderId, lastMsgIsRead}
+import useRefreshChatSummaryHook from "@frontend/hooks/useRefreshChatSummaryHook";
 
 export default function Chat() {
+  const { unreadCount } = useContext(UnreadContext);
   const authContext = useContext(AuthContext);
   const decodedUser = authContext.accessToken
     ? jwtDecode(authContext.accessToken)
@@ -18,42 +19,49 @@ export default function Chat() {
   const [page, setPage] = useState({
     isLoading: true,
     error: null,
-    chatFriends: [],
+    chatSummaries: [],
   });
 
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [startChat, setStartChat] = useState(false);
-
-  const fetchPageData = useCallback(async () => {
-    const abortController = new AbortController();
-    const chatService = new ChatService(abortController, authContext);
-
-    try {
-      setPage((state) => ({ ...state, isLoading: true }));
-      const data = await chatService.getChatFriends();
-
-      setPage((state) => ({
-        ...state,
-        isLoading: false,
-        chatFriends: data,
-      }));
-    } catch (err) {
-      if (!abortController.signal.aborted) {
-        console.error(err);
-        setPage((state) => ({
-          ...state,
-          error: "Unexpected error while loading data",
-          isLoading: false,
-        }));
-      }
-    }
-  }, []);
+  const totalMsgs = Object.values(unreadCount).reduce(
+    (sum, count) => sum + Number(count),
+    0
+  );
+  // {id, username, userImgSrc, lastMsg,lastMsgAt, lastMsgSenderId, lastMsgIsRead, room_id}
 
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";
 
+    const fetchPageData = async () => {
+      const abortController = new AbortController();
+      const chatService = new ChatService(abortController, authContext);
+
+      try {
+        setPage((state) => ({ ...state, isLoading: true }));
+        const data = await chatService.getChatSummaries();
+
+        setPage((state) => ({
+          ...state,
+          isLoading: false,
+          chatSummaries: data,
+        }));
+      } catch (err) {
+        if (!abortController.signal.aborted) {
+          console.error(err);
+          setPage((state) => ({
+            ...state,
+            error: "Unexpected error while loading data",
+            isLoading: false,
+          }));
+        }
+      }
+    };
+
     fetchPageData();
-  }, [fetchPageData]);
+  }, [authContext, unreadCount]);
+
+  useRefreshChatSummaryHook();
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;
@@ -65,28 +73,31 @@ export default function Chat() {
 
   return (
     <div className="w-full md:w-[600px] lg:w-[800px] xl:w-[1000px] mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">💬 Messages</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">
+        💬{" "}
+        {totalMsgs > 0
+          ? `${totalMsgs} Message${totalMsgs === 1 ? "" : "s"}`
+          : "Message"}
+      </h1>
 
-      {!page.chatFriends ? (
-        <div></div>
-      ) : (
+      {page.chatSummaries.length > 0 && (
         <ul className="border border-gray-200 p-1 rounded-md w-full">
-          {page.chatFriends.map((friend) => (
+          {page.chatSummaries.map((sum) => (
             <li
-              key={friend.id}
+              key={sum.id}
               onClick={() => {
                 setStartChat(true);
-                setSelectedFriend(friend);
+                setSelectedFriend(sum);
               }}
-              className="flex flex-col gap-1 p-2 hover:bg-gray-100 cursor-pointer "
+              className="flex flex-col gap-1 p-2 hover:bg-gray-100 cursor-pointer"
             >
               <ChatListItem
-                friendLastMsgAt={friend.lastMsgAt}
-                friendLastMsg={friend.lastMsg}
-                friendUsername={friend.username}
-                friendUserImgSrc={friend.userImgSrc}
-                lastMsgSenderIsFriend={friend.id !== decodedUser.id}
-                msgIsUnreadByMe={!friend.lastMsgIsRead}
+                lastMsgAt={sum.lastMsgAt}
+                lastMsg={sum.lastMsg}
+                friendUsername={sum.username}
+                friendUserImgSrc={sum.userImgSrc}
+                lastMsgSenderIsFriend={sum.lastMsgSenderId !== decodedUser.id}
+                msgIsUnread={!sum.lastMsgIsRead}
               />
             </li>
           ))}
@@ -98,7 +109,7 @@ export default function Chat() {
           startChatRoom={startChat}
           closeModal={() => {
             setStartChat(false);
-            fetchPageData();
+            setSelectedFriend(null);
           }}
         />
       )}

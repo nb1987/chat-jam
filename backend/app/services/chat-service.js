@@ -1,15 +1,16 @@
 import pool from "../config/db.js";
 
-export async function fetchChatRoomHistory(roomId) {
+// OFFSET = 몇번째부터 데이터를 가져올 것인가. 1~50, 51~100
+export async function fetchChatRoomHistory(roomId, offset = 0) {
   const q = `
 SELECT *
 FROM messages
 WHERE room_id = $1
-ORDER BY created_at ASC
-LIMIT 50 OFFSET 0;
-`;
+ORDER BY created_at DESC, id DESC
+LIMIT 50 OFFSET $2;
+`; // 최신 메시지부터
 
-  const result = await pool.query(q, [roomId]);
+  const result = await pool.query(q, [roomId, offset]);
   return Array.isArray(result.rows) ? result.rows : [];
 }
 
@@ -41,29 +42,32 @@ export async function getOrCreateRoomId(userId, friendId) {
   }
 }
 
-export async function insertMsg(roomId, text, senderId) {
+export async function insertMsg(roomId, text, senderId, friendId) {
   if (!roomId || !senderId) {
     console.error("Invalid input: roomId or senderId is missing.");
     throw new Error("Invalid roomId or senderId");
   }
 
   const q = `
-    INSERT INTO messages (room_id, text, user_id)
-    VALUES ($1, $2, $3)
-    RETURNING id, room_id, user_id, text, created_at
+    INSERT INTO messages (room_id, text, user_id, friend_id)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id, room_id, user_id, text, created_at, friend_id, is_read
   `;
 
-  const result = await pool.query(q, [roomId, text, senderId]);
+  const result = await pool.query(q, [roomId, text, senderId, friendId]);
   return result.rows[0];
 }
 
-export async function getChatFriendsInfo(userId) {
+// 내가 아닌 상대방의 정보/ 마지막 메시지와 시간, 속해있는 채팅방 ID
+// 마지막 메시지 보낸이/ 읽음 여부
+export async function getChatSummaries(userId) {
   const q = `
     SELECT 
       u.id, 
       u.username, 
       u.userImgSrc AS "userImgSrc",
       m.text AS "lastMsg",
+      m.room_id,
       m.created_at AS "lastMsgAt",
       m.user_id AS "lastMsgSenderId",
       m.is_read AS "lastMsgIsRead"
@@ -72,13 +76,13 @@ export async function getChatFriendsInfo(userId) {
       ON (u.id = cr.user1_id AND cr.user2_id = $1)
       OR (u.id = cr.user2_id AND cr.user1_id = $1)
     LEFT JOIN LATERAL (
-      SELECT text, created_at, user_id, is_read
+      SELECT text, created_at, user_id, is_read, room_id
       FROM messages
       WHERE room_id = cr.id
       ORDER BY created_at DESC
       LIMIT 1
     ) m ON true
-    WHERE u.id != $1
+    WHERE u.id != $1 
   `;
   const result = await pool.query(q, [userId]);
   return Array.isArray(result.rows) ? result.rows : [];
@@ -102,8 +106,24 @@ export async function updateMsgAsRead(messageIds, roomId) {
     SET is_read = true
     WHERE id = ANY($1::int[])
     AND room_id = $2
-    RETURNING id, is_read
+    RETURNING id, is_read, user_id, friend_id, room_id
   `;
   const result = await pool.query(q, [messageIds, roomId]);
   return Array.isArray(result.rows) ? result.rows : [];
 }
+
+export async function countUnreadMsg(userId) {
+  const q = `
+    SELECT room_id, COUNT(*) AS total
+    FROM messages
+    WHERE is_read = false
+    AND user_id != $1
+    AND room_id IN (
+      SELECT id FROM chat_rooms
+      WHERE user1_id = $1 OR user2_id = $1
+      )
+    GROUP BY room_id
+  `;
+  const result = await pool.query(q, [userId]);
+  return result.rows;
+} // 내가 참여한 채팅방에서 상대방이 보냈고, 내가 아직 안 읽은 메시지들

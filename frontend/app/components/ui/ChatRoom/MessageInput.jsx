@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { sendMsg } from "@frontend/services/socket";
 
-export default function MessageInput({ roomId, senderId, wrongCondition }) {
+export default function MessageInput({
+  roomId,
+  senderId,
+  wrongCondition,
+  friendId,
+}) {
   const [text, setText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef(null);
@@ -9,7 +14,7 @@ export default function MessageInput({ roomId, senderId, wrongCondition }) {
   const handleSend = () => {
     if (wrongCondition) return;
 
-    sendMsg(roomId, text, senderId);
+    sendMsg(roomId, text, senderId, friendId);
     setText("");
     setIsTyping(false);
 

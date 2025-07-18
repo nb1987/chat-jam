@@ -9,9 +9,6 @@ export default function useSocketErrorHook() {
         case "INSERT_FAILED":
           toast.error(error.message);
           break;
-        case "MARK_AS_READ_FAILED":
-          toast.error(error.message);
-          break;
         default:
           toast.error("Unknown error occured.");
       }

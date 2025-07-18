@@ -1,14 +1,19 @@
 import { useNavigate, NavLink } from "react-router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   UserIcon,
   ChatBubbleOvalLeftIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
-//import UnreadContext from "@frontend/contexts/unread-context";
+import UnreadContext from "@frontend/contexts/unread-context";
 
 export default function BottomNavigation() {
   const navigate = useNavigate();
+  const { unreadCount } = useContext(UnreadContext);
+  const totalMsgs = Object.values(unreadCount).reduce(
+    (sum, count) => sum + Number(count),
+    0
+  );
 
   const tabs = [
     {
@@ -54,7 +59,13 @@ export default function BottomNavigation() {
               currentTab === tab.name ? "text-orange-600" : "text-gray-500"
             }`}
           >
-            <span className="h-4 w-4">{tab.icon}</span> {tab.name}
+            <span className="size-6 relative">
+              {tab.icon}
+              {tab.name === "Chat" && totalMsgs > 0 && (
+                <span className="absolute top-0 left-6 block h-2 w-2 rounded-full bg-orange-400"></span>
+              )}
+            </span>
+            <span>{tab.name}</span>
           </NavLink>
         ))}
       </div>

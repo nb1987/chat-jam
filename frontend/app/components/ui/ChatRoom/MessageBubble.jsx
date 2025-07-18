@@ -6,7 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import ChatService from "@frontend/services/chat.service";
 import AuthContext from "@frontend/contexts/auth-context";
 import FriendMsgBubble from "./FriendMsgBubble";
-// msg = { id, room_id, user_id, text, created_at, id_deleted }
+// msg = { id, room_id, user_id, friend_id, text, created_at, id_deleted, is_read }
 // myInfo = {id, username, image}
 export default function MessageBubble({
   msg,
@@ -84,7 +84,9 @@ export default function MessageBubble({
             <span className="flex gap-1 text-xs text-orange-600">unread</span>
           )}
           <span className="text-xs text-gray-500">
-            {format(new Date(msg.created_at), "HH:mm")}
+            {msg.created_at && !isNaN(new Date(msg.created_at))
+              ? format(new Date(msg.created_at), "HH:mm")
+              : "??:??"}
           </span>
           <div
             ref={bubbleRef}
@@ -109,11 +111,11 @@ export default function MessageBubble({
 
       {selectedMsgId && showMenu && (
         <div
-          className="absolute bg-white border rounded shadow-md z-50"
+          className="fixed bg-white border border-gray-300 rounded shadow-md z-50"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <button
-            className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+            className="w-full text-left px-2 py-1 text-xs text-red-600 hover:bg-gray-100"
             onClick={() => {
               handleDeleteMsg(msg.id);
             }}

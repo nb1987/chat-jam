@@ -21,15 +21,17 @@ CREATE TABLE chat_rooms (
 
   CONSTRAINT unique_room_pair UNIQUE (user_low, user_high)
 ); 
+
 -- ALTER TABLE messages ADD COLUMN is_read BOOLEAN DEFAULT false;
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,
   created_at TIMESTAMP DEFAULT NOW(),
   room_id INT REFERENCES chat_rooms(id) ON DELETE CASCADE,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  friend_id INT REFERENCES users(id) ON DELETE CASCADE,
   text TEXT NOT NULL
   is_deleted BOOLEAN DEFAULT false
-  is_read BOOLEAN DEFAULT false
+  is_read BOOLEAN DEFAULT false 
 ); 
 
 CREATE INDEX index_msg_room_created ON messages (room_id, created_at)
