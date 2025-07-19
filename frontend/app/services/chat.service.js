@@ -29,7 +29,7 @@ class ChatService {
 
   async getChatHistory(roomId, offset) {
     const data = await this.client.get(
-      `/api/chat//history/${roomId}?offset=${offset}`
+      offset ? `/api/chat/history/${roomId}?offset=${offset}` : `/api/chat/history/${roomId}`
     );
     return data;
   }

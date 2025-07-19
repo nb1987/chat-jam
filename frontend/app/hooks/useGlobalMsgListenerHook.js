@@ -4,16 +4,20 @@ import UnreadContext from "@frontend/contexts/unread-context";
 import CurrentRoomContext from "@frontend/contexts/current-room-context";
 
 export default function useGlobalMsgListenerHook() {
-  const { setUnreadCount } = useContext(UnreadContext);
+  const { unreadCount, setUnreadCount } = useContext(UnreadContext);
   const { currentRoomId } = useContext(CurrentRoomContext);
 
   useEffect(() => {
     const handleGlobalUnreadCount = (insertedMsg) => {
-      if (insertedMsg.room_id !== currentRoomId)
-        setUnreadCount((count) => ({
-          ...count,
-          [insertedMsg.room_id]: (count[insertedMsg.room_id] || 0) + 1,
-        }));
+      if (insertedMsg.room_id !== currentRoomId) {
+        setUnreadCount((count) => {
+          const currentCount = count[insertedMsg.room_id] || 0;
+          return {
+            ...count,
+            [insertedMsg.room_id]: currentCount + 1,
+          };
+        });
+      }
     };
 
     socket.on("msgToFriend", handleGlobalUnreadCount);

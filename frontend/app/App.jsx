@@ -24,8 +24,6 @@ import AuthContext from "@frontend/contexts/auth-context";
 import SocketContext from "@frontend/contexts/socket-context";
 import UnreadContext from "@frontend/contexts/unread-context";
 import CurrentRoomContext from "@frontend/contexts/current-room-context";
-import useSocketDisconnectAlert from "@frontend/hooks/useSocketDisconnectAlert";
-import useGlobalMsgListenerHook from "@frontend/hooks/useGlobalMsgListenerHook";
 import {
   socket as socketInstance,
   registerSocket,
@@ -49,9 +47,6 @@ function App() {
     "/reset-password",
     "/update-password",
   ];
-
-  useSocketDisconnectAlert();
-  useGlobalMsgListenerHook();
 
   const setSocketAndUnreadCount = async (accessToken) => {
     const controller = new AbortController();

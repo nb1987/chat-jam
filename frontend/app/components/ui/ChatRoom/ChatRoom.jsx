@@ -140,7 +140,11 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
       setRoomState((state) => ({
         ...state,
-        msgHistory: [...state.msgHistory, moreHistory.reverse()],
+        msgHistory: [...(moreHistory.sort((a, b) => {
+          if (a.id < b.id) { return -1 }
+          if (a.id > b.id) { return 1 }
+          return 0
+        })), ...state.msgHistory],
       }));
       setDefaultPage((page) => page + 1);
     } catch (err) {
