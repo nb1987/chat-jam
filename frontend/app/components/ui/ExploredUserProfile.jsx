@@ -7,7 +7,7 @@ import { useContext, useState } from "react";
 import { toast } from "react-hot-toast";
 import UsersService from "@frontend/services/users.service";
 import AuthContext from "@frontend/contexts/auth-context";
-import ChatRoom from "@frontend/components/ui/ChatRoom";
+import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
 
 export default function ExploredUserProfile({ searchedUser }) {
   const { id: friendId, username, userImgSrc, city, state } = searchedUser;
