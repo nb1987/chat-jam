@@ -42,6 +42,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   const [isRoomReady, setIsRoomReady] = useState(false);
   const [defaultPage, setDefaultPage] = useState(0);
   const [fetchMoreMsg, setFetchMoreMsg] = useState(false);
+  const [blockFriend, setBlockFriend] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true); // 📌
   const scrollBottomRef = useRef(null); // 📌
   const scrollRef = useRef(null); // 📌
@@ -94,13 +95,20 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         setRoomState((state) => ({ ...state, isLoading: true }));
         const myData = await accountService.getUserInfo();
         const chatRoomId = await chatService.getChatRoomId(friendId);
-        const chatHistory = await chatService.getChatHistory(chatRoomId);
+        const chatHistory = await chatService.getChatHistory(
+          chatRoomId,
+          friendId
+        );
 
         setRoomState((state) => ({
           ...state,
           isLoading: false,
           roomId: chatRoomId,
-          msgHistory: [...chatHistory].reverse(),
+          msgHistory: [...chatHistory].sort((a, b) =>
+            a.created_at === b.created_at
+              ? a.id - b.id
+              : a.created_at - b.created_at
+          ),
           myInfo: myData,
         }));
 
@@ -140,7 +148,14 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
       setRoomState((state) => ({
         ...state,
-        msgHistory: [...state.msgHistory, moreHistory.reverse()],
+        msgHistory: [
+          ...moreHistory.sort((a, b) =>
+            a.created_at === b.created_at
+              ? a.id - b.id
+              : a.created_at - b.created_at
+          ),
+          ...state.msgHistory,
+        ],
       }));
       setDefaultPage((page) => page + 1);
     } catch (err) {
@@ -208,6 +223,9 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
               <ChatHeader
                 friendName={friendName}
                 closeModal={handleLeaveRoom}
+                friendId={friendId}
+                blockFriend={blockFriend}
+                setBlockFriend={setBlockFriend}
               />
 
               {/* list of messages & each msg has msg obj.📌 */}
@@ -242,6 +260,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                 senderId={roomState.myInfo.id || decodedUser.id}
                 wrongConditon={!isRoomReady || !roomState.myInfo?.id}
                 friendId={friendId}
+                blockFriend={blockFriend}
               />
             </DialogPanel>
           </div>

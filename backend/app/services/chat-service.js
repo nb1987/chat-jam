@@ -1,17 +1,56 @@
 import pool from "../config/db.js";
 
-// OFFSET = 몇번째부터 데이터를 가져올 것인가. 1~50, 51~100
-export async function fetchChatRoomHistory(roomId, offset = 0) {
+// 1 => 존재함?
+async function isSenderBlocked(senderId, receiverId) {
   const q = `
-SELECT *
-FROM messages
-WHERE room_id = $1
-ORDER BY created_at DESC, id DESC
-LIMIT 50 OFFSET $2;
-`; // 최신 메시지부터
+    SELECT 1
+    FROM blocked_users
+    WHERE blocked_id=$1 AND blocker_id=$2
+  `;
+  const result = await pool.query(q, [senderId, receiverId]);
+  return result.rowCount > 0;
+}
 
-  const result = await pool.query(q, [roomId, offset]);
-  return Array.isArray(result.rows) ? result.rows : [];
+const not_blocked_q = `
+    SELECT *
+    FROM messages
+    WHERE room_id = $1
+    ORDER BY created_at DESC, id DESC
+    LIMIT 50 OFFSET $2;
+  `; // 최신 메시지부터
+
+const blocked_q = `
+    (
+  SELECT *
+  FROM messages
+  WHERE room_id = $1
+    )
+  UNION ALL
+    (
+  SELECT id, room_id, sender_id AS user_id, receiver_id AS friend_id, text, created_at, is_deleted, is_read
+  FROM blocked_messages
+  WHERE room_id = $1 AND sender_id = $2             
+    )
+  ORDER BY created_at DESC, id DESC
+  LIMIT 50 OFFSET $3;
+  `;
+
+// OFFSET = 몇번째부터 데이터를 가져올 것인가. 1~50, 51~100
+export async function fetchChatRoomHistory(
+  userId,
+  roomId,
+  friendId,
+  offset = 0
+) {
+  const isBlocked = await isSenderBlocked(userId, friendId);
+
+  if (!isBlocked) {
+    const result = await pool.query(not_blocked_q, [roomId, offset]);
+    return Array.isArray(result.rows) ? result.rows : [];
+  } else {
+    const result = await pool.query(blocked_q, [roomId, userId, offset]);
+    return Array.isArray(result.rows) ? result.rows : [];
+  }
 }
 
 export async function getOrCreateRoomId(userId, friendId) {
@@ -42,20 +81,30 @@ export async function getOrCreateRoomId(userId, friendId) {
   }
 }
 
-export async function insertMsg(roomId, text, senderId, friendId) {
-  if (!roomId || !senderId) {
-    console.error("Invalid input: roomId or senderId is missing.");
-    throw new Error("Invalid roomId or senderId");
-  }
+async function insertBlockedMsg(roomId, text, senderId, friendId) {
+  const q = `
+    INSERT INTO blocked_messages (room_id, text, sender_id, receiver_id)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+  `;
+  const result = await pool.query(q, [roomId, text, senderId, friendId]);
+  return result.rows[0];
+}
 
+export async function insertMsg(roomId, text, senderId, friendId) {
   const q = `
     INSERT INTO messages (room_id, text, user_id, friend_id)
     VALUES ($1, $2, $3, $4)
-    RETURNING id, room_id, user_id, text, created_at, friend_id, is_read
+    RETURNING *
   `;
 
-  const result = await pool.query(q, [roomId, text, senderId, friendId]);
-  return result.rows[0];
+  const isBlocked = await isSenderBlocked(senderId);
+  if (isBlocked) {
+    return insertBlockedMsg(roomId, text, senderId, friendId);
+  } else {
+    const result = await pool.query(q, [roomId, text, senderId, friendId]);
+    return result.rows[0];
+  }
 }
 
 // 내가 아닌 상대방의 정보/ 마지막 메시지와 시간, 속해있는 채팅방 ID
@@ -89,8 +138,16 @@ export async function getChatSummaries(userId) {
 }
 
 export async function deleteMessage(messageId) {
-  const q = `
-    UPDATE messages
+  const check_table_q = `SELECT id FROM messages WHERE id = $1`;
+  const checkResult = await pool.query(check_table_q, [messageId]);
+
+  let q;
+  let table = "messages";
+  if (checkResult.rowCount === 0) {
+    table = "blocked_messages";
+  }
+  q = `
+    UPDATE ${table}
     SET text = 'This message is deleted.', is_deleted = true
     WHERE id = $1
     RETURNING id, text, is_deleted
@@ -127,3 +184,11 @@ export async function countUnreadMsg(userId) {
   const result = await pool.query(q, [userId]);
   return result.rows;
 } // 내가 참여한 채팅방에서 상대방이 보냈고, 내가 아직 안 읽은 메시지들
+
+export async function deleteChatRoom(roomId) {
+  const q = `
+    DELETE FROM chat_rooms
+    WHERE id = $1
+  `;
+  await pool.query(q, [roomId]);
+}

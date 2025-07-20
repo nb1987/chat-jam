@@ -6,6 +6,7 @@ export default function MessageInput({
   senderId,
   wrongCondition,
   friendId,
+  blockFriend,
 }) {
   const [text, setText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -29,6 +30,7 @@ export default function MessageInput({
   };
 
   useEffect(() => {
+    textareaRef.current.focus();
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
@@ -45,8 +47,9 @@ export default function MessageInput({
           const value = e.target.value;
           handleChange(value);
         }}
-        className="flex-1 resize-none overflow-hidden rounded-md bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-gray-300"
         placeholder="Type a message..."
+        disabled={blockFriend}
+        className="flex-1 resize-none overflow-hidden rounded-md bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-gray-300"
       />
 
       <button

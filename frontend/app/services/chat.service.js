@@ -20,16 +20,23 @@ class ChatService {
     return data;
   }
 
-  async DeleteMessage(messageId) {
+  async deleteMessage(messageId) {
     const data = await this.client.patch(
       `/api/chat/delete-message/${messageId}`
     );
     return data;
   }
 
-  async getChatHistory(roomId, offset) {
+  async exitChatRoom(roomId) {
+    const data = await this.client.delete(`/api/chat/exit/${roomId}`);
+    return data;
+  }
+
+  async getChatHistory(roomId, friendId, offset) {
     const data = await this.client.get(
-      `/api/chat//history/${roomId}?offset=${offset}`
+      offset
+        ? `/api/chat//history/${roomId}/${friendId}?offset=${offset}`
+        : `/api/chat//history/${roomId}/${friendId}`
     );
     return data;
   }

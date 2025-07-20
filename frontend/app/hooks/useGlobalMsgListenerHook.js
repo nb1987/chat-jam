@@ -10,10 +10,13 @@ export default function useGlobalMsgListenerHook() {
   useEffect(() => {
     const handleGlobalUnreadCount = (insertedMsg) => {
       if (insertedMsg.room_id !== currentRoomId)
-        setUnreadCount((count) => ({
-          ...count,
-          [insertedMsg.room_id]: (count[insertedMsg.room_id] || 0) + 1,
-        }));
+        setUnreadCount((count) => {
+          const currentCount = count[insertedMsg.room_id];
+          return {
+            ...count,
+            [insertedMsg.room_id]: (currentCount || 0) + 1,
+          };
+        });
     };
 
     socket.on("msgToFriend", handleGlobalUnreadCount);

@@ -2,13 +2,23 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 
 import ChatRoomSettings from "./ChatRoomSettings";
 
-export default function ChatHeader({ friendName, closeModal }) {
+export default function ChatHeader({
+  friendName,
+  closeModal,
+  friendId,
+  blockFriend,
+  setBlockFriend,
+}) {
   return (
     <div className="flex justify-between items-center mb-6">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Chat with {friendName}</h2>
         <span className="pl-2">
-          <ChatRoomSettings />
+          <ChatRoomSettings
+            friendId={friendId}
+            blockFriend={blockFriend}
+            setBlockFriend={setBlockFriend}
+          />
         </span>
       </div>
 

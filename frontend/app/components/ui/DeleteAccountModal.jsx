@@ -14,7 +14,7 @@ import Spinner from "@frontend/components/shared/Spinner";
 import AuthContext from "@frontend/contexts/auth-context";
 import toast from "react-hot-toast";
 
-export default function ConfirmationModal({
+export default function DeleteAccountModal({
   isDeleting,
   setIsDeleting,
   deleteAccountModalOpens,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ConfirmationModal from "@frontend/components/ui/ConfirmationModal";
+import DeleteAccountModal from "@frontend/components/ui/DeleteAccountModal";
 import ChangePasswordModal from "@frontend/components/ui/ChangePasswordModal";
 
 export default function AccountSettings() {
@@ -57,7 +57,7 @@ export default function AccountSettings() {
       )}
 
       {deleteAccountModalOpens && (
-        <ConfirmationModal
+        <DeleteAccountModal
           isDeleting={isDeleting}
           setIsDeleting={setIsDeleting}
           deleteAccountModalOpens={deleteAccountModalOpens}

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   countUnreadMsg,
+  deleteChatRoom,
   deleteMessage,
   fetchChatRoomHistory,
   getChatSummaries,
@@ -10,17 +11,26 @@ import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/history/:roomId", authenticateToken, async (req, res) => {
-  try {
-    const { roomId } = req.params;
-    const offset = parseInt(req.query.offset) || 0;
-    const history = await fetchChatRoomHistory(roomId, offset);
-    res.status(200).json(history);
-  } catch (err) {
-    console.error("fetching error,", err.message);
-    res.status(500).json({ error: "Failed to fetch chat history" });
+router.get(
+  "/history/:roomId/:friendId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { roomId, friendId } = req.params;
+      const offset = parseInt(req.query.offset) || 0;
+      const history = await fetchChatRoomHistory(
+        req.user.id,
+        roomId,
+        friendId,
+        offset
+      );
+      res.status(200).json(history);
+    } catch (err) {
+      console.error("fetching error,", err.message);
+      res.status(500).json({ error: "Failed to fetch chat history" });
+    }
   }
-});
+);
 
 router.get("/chat-summaries", authenticateToken, async (req, res) => {
   try {
@@ -70,5 +80,16 @@ router.patch(
     }
   }
 );
+
+router.delete("/exit/:roomId", authenticateToken, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    await deleteChatRoom(roomId);
+    res.status(204);
+  } catch (err) {
+    console.error("chatRoom deletion error,", err.message);
+    res.status(500).json({ error: "Failed to exit the requested chat" });
+  }
+});
 
 export default router;

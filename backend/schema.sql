@@ -34,6 +34,18 @@ CREATE TABLE messages (
   is_read BOOLEAN DEFAULT false 
 ); 
 
+CREATE TABLE blocked_messages (
+  id SERIAL PRIMARY KEY,            
+  created_at TIMESTAMP DEFAULT NOW(), 
+  room_id INT NOT NULL,          
+  sender_id INT NOT NULL,         
+  receiver_id INT NOT NULL,      
+  text TEXT,                      
+  is_deleted BOOLEAN DEFAULT false
+  is_read BOOLEAN DEFAULT false 
+);
+
+
 CREATE INDEX index_msg_room_created ON messages (room_id, created_at)
 
 CREATE TABLE friends (
@@ -41,6 +53,13 @@ CREATE TABLE friends (
   user2_id INT REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT NOW(),
   PRIMARY KEY (user1_id, user2_id)
+);
+
+CREATE TABLE blocked_users (
+  blocker_id INT REFERENCES users(id) ON DELETE CASCADE,
+  blocked_id INT REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (blocker_id, blocked_id)
 );
 
 INSERT INTO users (username, email, password, city, state)

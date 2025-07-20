@@ -53,7 +53,7 @@ export default function MessageBubble({
 
   const handleDeleteMsg = async (msgId) => {
     try {
-      await chatService.DeleteMessage(msgId);
+      await chatService.deleteMessage(msgId);
       onLocalMsgDelete(msgId);
       setSelectedMsgId(null);
       setShowMenu(false);
