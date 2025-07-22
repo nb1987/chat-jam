@@ -189,16 +189,6 @@ router.get("/user", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/user/friends", authenticateToken, async (req, res) => {
-  try {
-    const friends = await getUserFriends(req.user.id);
-    res.status(200).json(friends);
-  } catch (err) {
-    console.error("fetching error,", err.message);
-    res.status(500).json({ error: "Failed to fetch a list of friends" });
-  }
-});
-
 router.patch(
   "/edit-profile",
   authenticateToken,

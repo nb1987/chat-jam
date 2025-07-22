@@ -21,6 +21,7 @@ import useSocketErrorHook from "@frontend/hooks/useSocketErrorHook";
 import useMsgToFriendHook from "@frontend/hooks/useMsgToFriendHook";
 import SpinnerMini from "@frontend/components/shared/SpinnerMini";
 import useChatHandlers from "@frontend/hooks/useChatHandlers";
+import useBlockStatusHooks from "@frontend/hooks/useBlockStatusHook";
 
 export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   const authContext = useContext(AuthContext);
@@ -42,7 +43,10 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   const [isRoomReady, setIsRoomReady] = useState(false);
   const [defaultPage, setDefaultPage] = useState(0);
   const [fetchMoreMsg, setFetchMoreMsg] = useState(false);
-  const [blockFriend, setBlockFriend] = useState(false);
+  const [blockFriend, setBlockFriend] = useBlockStatusHooks(
+    friendId,
+    authContext
+  );
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true); // 📌
   const scrollBottomRef = useRef(null); // 📌
   const scrollRef = useRef(null); // 📌
@@ -104,11 +108,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
           ...state,
           isLoading: false,
           roomId: chatRoomId,
-          msgHistory: [...chatHistory].sort((a, b) =>
-            a.created_at === b.created_at
-              ? a.id - b.id
-              : a.created_at - b.created_at
-          ),
+          msgHistory: [...chatHistory].reverse(),
           myInfo: myData,
         }));
 
@@ -204,7 +204,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   if (roomState.isLoading || !decodedUser) {
     return <Spinner />;
   }
-
+  if (blockFriend === null) return <Spinner />;
   return (
     <div>
       <Dialog open={startChatRoom} onClose={() => {}} className="relative z-10">

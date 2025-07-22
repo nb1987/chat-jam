@@ -8,10 +8,10 @@ import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import ListedFriend from "@frontend/components/ui/ListedFriend";
 import MyProfile from "@frontend/components/ui/MyProfile";
 import FriendProfile from "@frontend/components/ui/FriendProfile";
+import UsersService from "@frontend/services/users.service";
 
 export default function Friends() {
   const authContext = useContext(AuthContext);
-  const { accessToken } = useContext(AuthContext);
   const decodedUser = authContext.accessToken
     ? jwtDecode(authContext.accessToken)
     : null;
@@ -30,13 +30,15 @@ export default function Friends() {
     document.title = "ChatJam, Talk Smart";
 
     const abortController = new AbortController();
+    const controller = new AbortController();
     const accountService = new AccountService(abortController, authContext);
+    const usersService = new UsersService(controller, authContext);
 
     const fetchPageData = async () => {
       try {
         setPage((state) => ({ ...state, isLoading: true }));
         const data = await accountService.getUserInfo();
-        const fetchedFriends = await accountService.getUserFriends();
+        const fetchedFriends = await usersService.getUserFriends();
 
         setPage((state) => ({
           ...state,
@@ -60,8 +62,9 @@ export default function Friends() {
 
     return () => {
       abortController.abort();
+      controller.abort();
     };
-  }, [accessToken, setFriends]);
+  }, [authContext, setFriends]);
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;

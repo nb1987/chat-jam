@@ -1,4 +1,5 @@
 import { insertMsg, updateMsgAsRead } from "./chat-service.js";
+import { isSenderBlocked } from "./users-service.js";
 
 // io: 카톡 본사 서버
 // io.on("connection", (socket) => {..}
@@ -30,12 +31,15 @@ export default function socketHandler(io) {
       try {
         const receiverSocketId = userSocketMap.get(friendId);
         const insertedMsg = await insertMsg(roomId, text, senderId, friendId);
+        const senderIsBlocked = await isSenderBlocked(senderId, friendId);
 
         socket.emit("msgToMe", insertedMsg); // 나에게 보내서 UI 업데이트
 
-        // 친구가 소켓 연결이 된 상태(로그인을 함)
-        if (receiverSocketId) {
-          io.to(receiverSocketId).emit("msgToFriend", insertedMsg);
+        if (!senderIsBlocked) {
+          // 친구가 소켓 연결이 된 상태(로그인을 함)
+          if (receiverSocketId) {
+            io.to(receiverSocketId).emit("msgToFriend", insertedMsg);
+          }
         }
       } catch (err) {
         console.error("Failed to insert message:", err.message);

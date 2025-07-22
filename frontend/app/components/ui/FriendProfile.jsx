@@ -1,18 +1,40 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { UserIcon } from "@heroicons/react/24/solid";
-import { ChatBubbleBottomCenterIcon } from "@heroicons/react/24/solid";
+import {
+  ChatBubbleBottomCenterIcon,
+  UserMinusIcon,
+} from "@heroicons/react/24/solid";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
+import FriendsContext from "@frontend/contexts/friends-context";
+import AuthContext from "@frontend/contexts/auth-context";
+import UsersService from "@frontend/services/users.service";
+import toast from "react-hot-toast";
 
 export default function FriendProfile({
   userInfo,
   friendProfileOpens,
   setFriendProfileOpens,
 }) {
-  const { username, userImgSrc } = userInfo;
+  const { id, username, userImgSrc } = userInfo;
   const [startChat, setStartChat] = useState(false);
+  const { setFriends } = useContext(FriendsContext);
+  const abortController = new AbortController();
+  const usersService = new UsersService(abortController, AuthContext);
 
+  const handleUnfriend = async () => {
+    try {
+      await usersService.removeFriend(id);
+      setFriends.filter((f) => f.id !== id);
+      setFriendProfileOpens(false);
+    } catch (err) {
+      if (!abortController.signal.aborted) {
+        console.error(err);
+        toast.error("Unexpected error happened.");
+      }
+    }
+  };
   return (
     <div>
       <Dialog
@@ -29,7 +51,7 @@ export default function FriendProfile({
           <div className="flex min-h-screen items-center justify-center p-4 text-center">
             <DialogPanel
               transition
-              className="relative w-[90%] max-w-sm min-h-[20rem] sm:min-h-[24rem] transform overflow-hidden rounded-lg bg-white px-4 pt-4 text-left shadow-xl transition-all sm:p-6"
+              className="relative w-[90%] max-w-sm min-h-[20rem] sm:min-h-[20rem] transform overflow-hidden rounded-lg bg-white px-4 pt-4  text-left shadow-xl transition-all sm:p-6"
             >
               <div className="px-4 sm:px-6">
                 <div className="ml-3 flex h-7 items-center">
@@ -62,13 +84,26 @@ export default function FriendProfile({
                 <p className="text-lg font-medium text-gray-900">{username}</p>
               </div>
 
-              <div
-                className="border-t border-gray-300 mt-12 pt-6 sm:pb-0.5 flex flex-col items-center justify-center gap-2 py-4"
-                onClick={() => setStartChat(true)}
-              >
-                <ChatBubbleBottomCenterIcon className="size-6 text-gray-700" />
-                <div className="inline-flex justify-center py-2 text-sm font-semibold text-gray-700">
-                  Send a message
+              <div className="flex flex-col items-center justify-center mt-12  border-t border-gray-300">
+                <div className="flex items-center justify-center pt-6 pb-2">
+                  <div
+                    className="flex flex-col items-center justify-center gap-2 px-6"
+                    onClick={() => setStartChat(true)}
+                  >
+                    <ChatBubbleBottomCenterIcon className="size-6 text-gray-700" />
+                    <div className="text-sm font-semibold text-gray-700">
+                      Send a message
+                    </div>
+                  </div>
+                  <div
+                    className="flex flex-col items-center justify-center gap-2 px-6"
+                    onClick={handleUnfriend}
+                  >
+                    <UserMinusIcon className="size-6 text-red-400" />
+                    <div className="text-sm font-semibold text-red-500">
+                      Unfriend
+                    </div>
+                  </div>
                 </div>
               </div>
             </DialogPanel>

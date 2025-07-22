@@ -54,11 +54,6 @@ class AccountService {
     return data;
   }
 
-  async getUserFriends() {
-    const data = await this.client.get(`/api/accounts/user/friends`);
-    return data;
-  }
-
   async editUserAccount(formData) {
     const data = await this.client.patch(
       "/api/accounts/edit-profile",

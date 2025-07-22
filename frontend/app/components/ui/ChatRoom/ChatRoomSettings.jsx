@@ -11,6 +11,7 @@ import ChatService from "@frontend/services/chat.service";
 import AuthContext from "@frontend/contexts/auth-context";
 import toast from "react-hot-toast";
 import Toggle from "@frontend/components/shared/Toggle";
+import UsersService from "@frontend/services/users.service";
 
 export default function ChatRoomSettings({
   friendId,
@@ -21,7 +22,9 @@ export default function ChatRoomSettings({
   const { currentRoomId, setCurrentRoomId } = useContext(CurrentRoomContext);
   const authContext = useContext(AuthContext);
   const abortController = new AbortController();
+  const controller = new AbortController();
   const chatService = new ChatService(abortController, authContext);
+  const usersService = new UsersService(controller, authContext);
 
   const exitChat = async () => {
     try {
@@ -32,6 +35,21 @@ export default function ChatRoomSettings({
         console.error(err);
         toast.error(err.message);
       }
+    }
+  };
+
+  const handleBlockFriend = async () => {
+    try {
+      if (blockFriend) {
+        await usersService.unblockFriend(friendId);
+        setBlockFriend(false);
+      } else {
+        await usersService.blockFriend(friendId);
+        setBlockFriend(true);
+      }
+    } catch (err) {
+      toast.error("Something went wrong while updating the block setting.");
+      console.error(err);
     }
   };
 
@@ -49,11 +67,7 @@ export default function ChatRoomSettings({
                 <span className="ml-1 mr-2">Block this user</span>
                 <Toggle
                   blockFriend={blockFriend}
-                  handleClick={() => {
-                    setBlockFriend((prev) => {
-                      return !prev;
-                    });
-                  }}
+                  handleClick={handleBlockFriend}
                 />
               </div>
             </div>

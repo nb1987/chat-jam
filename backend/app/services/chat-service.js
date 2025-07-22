@@ -1,15 +1,5 @@
 import pool from "../config/db.js";
-
-// 1 => 존재함?
-async function isSenderBlocked(senderId, receiverId) {
-  const q = `
-    SELECT 1
-    FROM blocked_users
-    WHERE blocked_id=$1 AND blocker_id=$2
-  `;
-  const result = await pool.query(q, [senderId, receiverId]);
-  return result.rowCount > 0;
-}
+import { isSenderBlocked, getIdsWhoBlockedUser } from "./users-service.js";
 
 const not_blocked_q = `
     SELECT *
@@ -20,17 +10,33 @@ const not_blocked_q = `
   `; // 최신 메시지부터
 
 const blocked_q = `
-    (
-  SELECT *
+SELECT *
+FROM (
+  SELECT
+    id,
+    room_id,
+    user_id,
+    friend_id,
+    text,
+    created_at::timestamp,
+    is_deleted,
+    is_read
   FROM messages
   WHERE room_id = $1
-    )
+    
   UNION ALL
-    (
-  SELECT id, room_id, sender_id AS user_id, receiver_id AS friend_id, text, created_at, is_deleted, is_read
+  SELECT 
+    id, 
+    room_id, 
+    sender_id AS user_id, 
+    receiver_id AS friend_id, 
+    text, 
+    created_at::timestamp, 
+    is_deleted, 
+    is_read
   FROM blocked_messages
   WHERE room_id = $1 AND sender_id = $2             
-    )
+) AS all_messages
   ORDER BY created_at DESC, id DESC
   LIMIT 50 OFFSET $3;
   `;
@@ -98,7 +104,7 @@ export async function insertMsg(roomId, text, senderId, friendId) {
     RETURNING *
   `;
 
-  const isBlocked = await isSenderBlocked(senderId);
+  const isBlocked = await isSenderBlocked(senderId, friendId);
   if (isBlocked) {
     return insertBlockedMsg(roomId, text, senderId, friendId);
   } else {
@@ -107,9 +113,71 @@ export async function insertMsg(roomId, text, senderId, friendId) {
   }
 }
 
-// 내가 아닌 상대방의 정보/ 마지막 메시지와 시간, 속해있는 채팅방 ID
-// 마지막 메시지 보낸이/ 읽음 여부
-export async function getChatSummaries(userId) {
+function getAllMessagesSubQuery() {
+  return `
+    SELECT
+     room_id,
+     text,
+     created_at::timestamp,
+     is_read,
+     user_id AS sender_id,
+     CASE WHEN user_id = $1 THEN friend_id
+          ELSE user_id
+          END AS other_user_id
+    FROM messages
+    WHERE user_id = $1 AND friend_id = ANY($2)
+       OR friend_id = $1 AND user_id = ANY($2)
+    
+  UNION ALL
+
+  SELECT  
+    room_id, 
+    text, 
+    created_at::timestamp, 
+    is_read, 
+    sender_id,
+    CASE 
+      WHEN sender_id = $1 THEN receiver_id
+      ELSE sender_id
+      END AS other_user_id
+  FROM blocked_messages
+  WHERE sender_id = $1 AND receiver_id = ANY($2)
+     OR receiver_id = $1 AND sender_id = ANY($2)
+  `;
+}
+
+async function getSummariesFromBlockers(userId, arrayOfIds) {
+  const q = `
+SELECT DISTINCT ON (m.other_user_id)
+  u.id, 
+  u.username, 
+  u.userImgSrc AS "userImgSrc",  
+  m.text AS "lastMsg",
+  m.room_id,
+  m.created_at AS "lastMsgAt",
+  m.sender_id AS "lastMsgSenderId",
+  m.is_read AS "lastMsgIsRead"
+FROM (
+  ${getAllMessagesSubQuery()} 
+) AS m
+JOIN users u ON u.id = m.other_user_id
+ORDER BY m.other_user_id, m.created_at DESC
+LIMIT 1
+  `;
+  const result = await pool.query(q, [userId, arrayOfIds]);
+  return result.rows.map((row) => ({
+    id: row.id,
+    username: row.username,
+    userImgSrc: row.userImgSrc,
+    lastMsg: row.lastMsg,
+    room_id: row.room_id,
+    lastMsgAt: row.lastMsgAt,
+    lastMsgSenderId: row.lastMsgSenderId,
+    lastMsgIsRead: row.lastMsgIsRead,
+  }));
+}
+
+async function getNormalSummaries(userId) {
   const q = `
     SELECT 
       u.id, 
@@ -135,6 +203,25 @@ export async function getChatSummaries(userId) {
   `;
   const result = await pool.query(q, [userId]);
   return Array.isArray(result.rows) ? result.rows : [];
+}
+
+// 내가 아닌 상대방의 정보/ 마지막 메시지와 시간, 속해있는 채팅방 ID
+// 마지막 메시지 보낸이/ 읽음 여부
+export async function getChatSummaries(userId) {
+  const arrayOfIds = await getIdsWhoBlockedUser(userId);
+  let summariesWithBlockers = [];
+  let normalSummaries = [];
+
+  if (arrayOfIds.length > 0) {
+    summariesWithBlockers = await getSummariesFromBlockers(userId, arrayOfIds);
+  }
+  normalSummaries = await getNormalSummaries(userId);
+
+  const sortedSurmmaries = [...summariesWithBlockers, ...normalSummaries].sort(
+    (a, b) => new Date(b.lastMsgAt) - new Date(a.lastMsgAt)
+  );
+
+  return sortedSurmmaries;
 }
 
 export async function deleteMessage(messageId) {

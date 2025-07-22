@@ -45,7 +45,6 @@ CREATE TABLE blocked_messages (
   is_read BOOLEAN DEFAULT false 
 );
 
-
 CREATE INDEX index_msg_room_created ON messages (room_id, created_at)
 
 CREATE TABLE friends (
