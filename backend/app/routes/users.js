@@ -9,6 +9,7 @@ import {
   isSenderBlocked,
   didUserBlockFriend,
   getUserFriends,
+  removeFriend,
 } from "../services/users-service.js";
 import { authenticateToken } from "../middleware/auth.middleware.js";
 

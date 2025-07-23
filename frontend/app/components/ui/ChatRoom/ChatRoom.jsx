@@ -73,7 +73,15 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   ); // 📌
   useSocketErrorHook();
 
-  const { onLocalMsgDelete } = useChatHandlers({ setRoomState });
+  const { onLocalMsgDelete, loadMoreMessages } = useChatHandlers({
+    setRoomState,
+    authContext,
+    setShouldAutoScroll,
+    setFetchMoreMsg,
+    defaultPage,
+    roomState,
+    setDefaultPage,
+  });
 
   const handleLeaveRoom = () => {
     userExitedOnPurpose.current = true;
@@ -132,41 +140,6 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
       abortController.abort();
     };
   }, [authContext, setCurrentRoomId, friendId]);
-
-  //📌 move this logic to `useChatHandlers` later.
-  const loadMoreMessages = async () => {
-    const controller = new AbortController();
-    const chatService = new ChatService(controller, authContext);
-    try {
-      setShouldAutoScroll(false);
-      setFetchMoreMsg(true);
-      const offset = (defaultPage + 1) * 50;
-      const moreHistory = await chatService.getChatHistory(
-        roomState.roomId,
-        offset
-      );
-
-      setRoomState((state) => ({
-        ...state,
-        msgHistory: [
-          ...moreHistory.sort((a, b) =>
-            a.created_at === b.created_at
-              ? a.id - b.id
-              : a.created_at - b.created_at
-          ),
-          ...state.msgHistory,
-        ],
-      }));
-      setDefaultPage((page) => page + 1);
-    } catch (err) {
-      if (!controller.signal.aborted) {
-        console.error(err);
-        toast.error("Unexpected error while loading chat history");
-      }
-    } finally {
-      setFetchMoreMsg(false);
-    }
-  };
 
   // 📌 위&아래로 스크롤했을 때 실행됨, 스크롤이 맨 위로 도달하면 메시지 불러오기.
   const handleScroll = async () => {

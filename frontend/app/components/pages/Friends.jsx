@@ -29,10 +29,10 @@ export default function Friends() {
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";
 
-    const abortController = new AbortController();
-    const controller = new AbortController();
-    const accountService = new AccountService(abortController, authContext);
-    const usersService = new UsersService(controller, authContext);
+    const accountController = new AbortController();
+    const userController = new AbortController();
+    const accountService = new AccountService(accountController, authContext);
+    const usersService = new UsersService(userController, authContext);
 
     const fetchPageData = async () => {
       try {
@@ -47,7 +47,10 @@ export default function Friends() {
         }));
         setFriends(fetchedFriends);
       } catch (err) {
-        if (!abortController.signal.aborted) {
+        if (
+          !accountController.signal.aborted &&
+          !userController.signal.aborted
+        ) {
           console.error(err);
           setPage((state) => ({
             ...state,
@@ -61,10 +64,10 @@ export default function Friends() {
     fetchPageData();
 
     return () => {
-      abortController.abort();
-      controller.abort();
+      accountController.abort();
+      userController.abort();
     };
-  }, [authContext, setFriends]);
+  }, [authContext.accessToken, friends.length]);
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;
@@ -86,7 +89,7 @@ export default function Friends() {
             onClick={() => setMyProfileOpens(true)}
             className="py-1"
           >
-            <ListedFriend person={page.userData} />
+            <ListedFriend person={page.userData} isMe={true} />
           </li>
 
           {friends.map((friend) => (

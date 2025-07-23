@@ -70,8 +70,7 @@ export default function MessageBubble({
     <div className={`flex mb-2 ${isItMe ? "justify-end" : "justify-start"}`}>
       {!isItMe && (
         <FriendMsgBubble
-          friendImg={friendInfo?.userImgSrc}
-          friendName={friendInfo?.username}
+          friendInfo={friendInfo}
           text={msg.text}
           createdAt={msg.created_at}
           msgIsDeleted={msg.is_deleted}
@@ -93,7 +92,7 @@ export default function MessageBubble({
             onContextMenu={
               !msg.is_deleted ? (e) => handleContextMenu(e, msg.id) : undefined
             } // right click happens
-            className="relative px-3 py-2 rounded-xl max-w-xs bg-orange-400 text-sm text-white rounded-br-none"
+            className="relative px-3 py-2 rounded-xl max-w-xs bg-orange-100 text-sm text-gray-800 rounded-br-none"
           >
             {msg.is_deleted ? (
               <div className="flex items-center gap-1 italic text-sm text-gray-100">

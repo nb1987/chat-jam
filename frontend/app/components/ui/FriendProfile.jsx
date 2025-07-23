@@ -1,16 +1,14 @@
 import { useContext, useState } from "react";
+import toast from "react-hot-toast";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { UserIcon } from "@heroicons/react/24/solid";
-import {
-  ChatBubbleBottomCenterIcon,
-  UserMinusIcon,
-} from "@heroicons/react/24/solid";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
 import FriendsContext from "@frontend/contexts/friends-context";
 import AuthContext from "@frontend/contexts/auth-context";
 import UsersService from "@frontend/services/users.service";
-import toast from "react-hot-toast";
+import FriendProfileAction from "@frontend/components/ui/FriendProfileAction";
+import EnlargedImgModal from "@frontend/components/ui/EnlargedImgModal";
 
 export default function FriendProfile({
   userInfo,
@@ -18,15 +16,17 @@ export default function FriendProfile({
   setFriendProfileOpens,
 }) {
   const { id, username, userImgSrc } = userInfo;
-  const [startChat, setStartChat] = useState(false);
   const { setFriends } = useContext(FriendsContext);
+  const [startChat, setStartChat] = useState(false);
+  const [openImage, setOpenImage] = useState(false);
+  const authContext = useContext(AuthContext);
   const abortController = new AbortController();
-  const usersService = new UsersService(abortController, AuthContext);
+  const usersService = new UsersService(abortController, authContext);
 
   const handleUnfriend = async () => {
     try {
       await usersService.removeFriend(id);
-      setFriends.filter((f) => f.id !== id);
+      setFriends((prev) => prev.filter((f) => f.id !== id));
       setFriendProfileOpens(false);
     } catch (err) {
       if (!abortController.signal.aborted) {
@@ -70,6 +70,7 @@ export default function FriendProfile({
                 {userImgSrc ? (
                   <img
                     alt="user image"
+                    onClick={() => setOpenImage(true)}
                     src={userImgSrc.replace(
                       "/upload/",
                       "/upload/w_100,h_100,c_fill,f_auto,q_auto/"
@@ -85,26 +86,10 @@ export default function FriendProfile({
               </div>
 
               <div className="flex flex-col items-center justify-center mt-12  border-t border-gray-300">
-                <div className="flex items-center justify-center pt-6 pb-2">
-                  <div
-                    className="flex flex-col items-center justify-center gap-2 px-6"
-                    onClick={() => setStartChat(true)}
-                  >
-                    <ChatBubbleBottomCenterIcon className="size-6 text-gray-700" />
-                    <div className="text-sm font-semibold text-gray-700">
-                      Send a message
-                    </div>
-                  </div>
-                  <div
-                    className="flex flex-col items-center justify-center gap-2 px-6"
-                    onClick={handleUnfriend}
-                  >
-                    <UserMinusIcon className="size-6 text-red-400" />
-                    <div className="text-sm font-semibold text-red-500">
-                      Unfriend
-                    </div>
-                  </div>
-                </div>
+                <FriendProfileAction
+                  setStartChat={setStartChat}
+                  handleUnfriend={handleUnfriend}
+                />
               </div>
             </DialogPanel>
           </div>
@@ -119,6 +104,12 @@ export default function FriendProfile({
             setStartChat(false);
             setFriendProfileOpens(false);
           }}
+        />
+      )}
+      {openImage && (
+        <EnlargedImgModal
+          imgSrc={userImgSrc}
+          onClose={() => setOpenImage(false)}
         />
       )}
     </div>

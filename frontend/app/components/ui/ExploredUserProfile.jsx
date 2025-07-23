@@ -8,6 +8,7 @@ import { toast } from "react-hot-toast";
 import UsersService from "@frontend/services/users.service";
 import AuthContext from "@frontend/contexts/auth-context";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
+import EnlargedImgModal from "./EnlargedImgModal";
 
 export default function ExploredUserProfile({ searchedUser }) {
   const { id: friendId, username, userImgSrc, city, state } = searchedUser;
@@ -16,6 +17,7 @@ export default function ExploredUserProfile({ searchedUser }) {
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
   const [startChatRoom, setStartChatRoom] = useState(false);
+  const [openImage, setOpenImage] = useState(false);
 
   const abortController = new AbortController();
   const usersService = new UsersService(abortController, authContext);
@@ -51,6 +53,7 @@ export default function ExploredUserProfile({ searchedUser }) {
         {userImgSrc ? (
           <img
             alt="user image"
+            onClick={() => setOpenImage(true)}
             src={userImgSrc.replace(
               "/upload/",
               "/upload/w_100,h_100,c_fill,f_auto,q_auto/"
@@ -112,6 +115,12 @@ export default function ExploredUserProfile({ searchedUser }) {
           closeModal={() => {
             setStartChatRoom(false);
           }}
+        />
+      )}
+      {openImage && (
+        <EnlargedImgModal
+          imgSrc={userImgSrc}
+          onClose={() => setOpenImage(false)}
         />
       )}
     </>
