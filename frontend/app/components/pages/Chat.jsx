@@ -2,12 +2,12 @@ import { jwtDecode } from "jwt-decode";
 import { useContext, useEffect, useState } from "react";
 import AuthContext from "@frontend/contexts/auth-context";
 import UnreadContext from "@frontend/contexts/unread-context";
-import ErrorPage from "@frontend/components/notifications/ErrorPage";
 import Spinner from "@frontend/components/shared/Spinner";
 import ChatService from "@frontend/services/chat.service";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
 import ChatListItem from "../ui/ChatListItem";
 import useRefreshChatSummaryHook from "@frontend/hooks/useRefreshChatSummaryHook";
+import toast from "react-hot-toast";
 
 export default function Chat() {
   const { unreadCount } = useContext(UnreadContext);
@@ -28,7 +28,7 @@ export default function Chat() {
     (sum, count) => sum + Number(count),
     0
   );
-  // {id, username, userImgSrc, lastMsg,lastMsgAt, lastMsgSenderId, lastMsgIsRead, room_id}
+  // {id, username, userImgSrc, lastMsg,lastMsgAt, lastMsgSenderId, lastMsgIsRead, room_id, }
 
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";
@@ -54,6 +54,7 @@ export default function Chat() {
             error: "Unexpected error while loading data",
             isLoading: false,
           }));
+          toast.error("Unexpected error while loading data");
         }
       }
     };
@@ -65,10 +66,6 @@ export default function Chat() {
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;
-  }
-
-  if (page.error) {
-    return <ErrorPage text={page.error} />;
   }
 
   return (

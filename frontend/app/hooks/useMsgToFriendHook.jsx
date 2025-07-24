@@ -2,6 +2,8 @@ import { useContext, useEffect } from "react";
 import CurrentRoomContext from "@frontend/contexts/current-room-context";
 import UnreadContext from "@frontend/contexts/unread-context";
 import { socket } from "@frontend/services/socket";
+import toast from "react-hot-toast";
+import NewMessageAlert from "@frontend/components/notifications/NewMessageAlert";
 
 // 내가 보낸 메시지가 db에 저장되어 친구에게 감 => UI 업데이트
 // msg that I sent to friend is saved in DB and goes to friend
@@ -19,7 +21,14 @@ export default function useMsgToFriendHook(setRoomState) {
           [insertedMsg.room_id]: (count[insertedMsg.room_id] || 0) + 1,
         })); // (해당 채팅방의 메시지 수 || 없으면 0) 그리고 1을 더함.
 
-        return;
+        // toast.custom(
+        //   (t) => (
+        //     <div className={`${t.visible ? "animate-enter" : "animate-leave"}`}>
+        //       <NewMessageAlert />
+        //     </div>
+        //   ),
+        //   { duration: 3000 }
+        // );
       } else {
         setRoomState((state) => ({
           ...state,

@@ -113,7 +113,8 @@ export async function insertMsg(roomId, text, senderId, friendId) {
   }
 }
 
-function getAllMessagesSubQuery() {
+// 나와 대화한 상대방은 누구인가를(other_user_id) 정의함.
+function mergedMsgTable() {
   return `
     SELECT
      room_id,
@@ -146,38 +147,31 @@ function getAllMessagesSubQuery() {
   `;
 }
 
-async function getSummariesFromBlockers(userId, arrayOfIds) {
+// 한 친구당 하나씩 메시지 요약 (상대방을 기준으로 그룹화)
+// 같은 사람에 대해 여러 행이 있으면 맨 위의 것만 하나 남김.
+async function getLastChatPreviewFromBlockers(userId, ids) {
   const q = `
-SELECT DISTINCT ON (m.other_user_id)
-  u.id, 
-  u.username, 
-  u.userImgSrc AS "userImgSrc",  
-  m.text AS "lastMsg",
-  m.room_id,
-  m.created_at AS "lastMsgAt",
-  m.sender_id AS "lastMsgSenderId",
-  m.is_read AS "lastMsgIsRead"
-FROM (
-  ${getAllMessagesSubQuery()} 
-) AS m
-JOIN users u ON u.id = m.other_user_id
-ORDER BY m.other_user_id, m.created_at DESC
-LIMIT 1
-  `;
-  const result = await pool.query(q, [userId, arrayOfIds]);
-  return result.rows.map((row) => ({
-    id: row.id,
-    username: row.username,
-    userImgSrc: row.userImgSrc,
-    lastMsg: row.lastMsg,
-    room_id: row.room_id,
-    lastMsgAt: row.lastMsgAt,
-    lastMsgSenderId: row.lastMsgSenderId,
-    lastMsgIsRead: row.lastMsgIsRead,
-  }));
+    SELECT DISTINCT ON (m.other_user_id)
+      u.id, 
+      u.username, 
+      u.userImgSrc AS "userImgSrc",  
+      m.text AS "lastMsg",
+      m.room_id,
+      m.created_at AS "lastMsgAt",
+      m.sender_id AS "lastMsgSenderId",
+      m.is_read AS "lastMsgIsRead"
+    FROM (
+      ${mergedMsgTable()} 
+    ) AS m
+    JOIN users u ON u.id = m.other_user_id
+    ORDER BY m.other_user_id, m.created_at DESC
+    `;
+
+  const result = await pool.query(q, [userId, ids]);
+  return Array.isArray(result.rows) ? result.rows : [];
 }
 
-async function getNormalSummaries(userId) {
+async function getRegularChatSummary(userId) {
   const q = `
     SELECT 
       u.id, 
@@ -208,20 +202,40 @@ async function getNormalSummaries(userId) {
 // 내가 아닌 상대방의 정보/ 마지막 메시지와 시간, 속해있는 채팅방 ID
 // 마지막 메시지 보낸이/ 읽음 여부
 export async function getChatSummaries(userId) {
-  const arrayOfIds = await getIdsWhoBlockedUser(userId);
-  let summariesWithBlockers = [];
-  let normalSummaries = [];
+  const idsOfBlockers = await getIdsWhoBlockedUser(userId);
+  const regularChatSummary = await getRegularChatSummary(userId);
+  let blockersChatSummary = [];
 
-  if (arrayOfIds.length > 0) {
-    summariesWithBlockers = await getSummariesFromBlockers(userId, arrayOfIds);
+  if (idsOfBlockers.length > 0) {
+    blockersChatSummary = await getLastChatPreviewFromBlockers(
+      userId,
+      idsOfBlockers
+    );
   }
-  normalSummaries = await getNormalSummaries(userId);
 
-  const sortedSurmmaries = [...summariesWithBlockers, ...normalSummaries].sort(
+  const mergedPreview = [...blockersChatSummary, ...regularChatSummary];
+
+  const latestMap = new Map();
+
+  // 차단 전&후를 포함한 모든 채팅 요약을 확인함.
+  for (const preview of mergedPreview) {
+    const existing = latestMap.get(preview.id);
+
+    // 해당 유저가 아직 저장 안됨 || 지금 메시지가 더 최신 => 갱신
+    if (
+      !existing ||
+      new Date(preview.lastMsgAt) > new Date(existing.lastMsgAt)
+    ) {
+      latestMap.set(preview.id, preview);
+    }
+  }
+
+  // 3. 정렬해서 반환
+  const chatPreviewList = Array.from(latestMap.values()).sort(
     (a, b) => new Date(b.lastMsgAt) - new Date(a.lastMsgAt)
   );
 
-  return sortedSurmmaries;
+  return chatPreviewList;
 }
 
 export async function deleteMessage(messageId) {

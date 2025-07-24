@@ -5,8 +5,8 @@ import { isSenderBlocked } from "./users-service.js";
 // io.on("connection", (socket) => {..}
 // 내가 앱으로 접속하면 본사 서버로 연결 요청을 한 것, "connection" 콜백 실행
 
+// 내 소켓 아이디를 저장, Map {'user123' => 'socket_abc'}`
 export default function socketHandler(io) {
-  // 내 소켓 아이디를 저장, `userSocketMap[userId] = socket.id`
   const userSocketMap = new Map();
 
   io.on("connection", (socket) => {

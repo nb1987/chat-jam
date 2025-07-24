@@ -18,7 +18,7 @@ import useScrollToBottomHook from "@frontend/hooks/useScrollToBottomHook";
 import useEmitUnreadMsgHook from "@frontend/hooks/useEmitUnreadMsgHook";
 import useReceiveReadMsgHook from "@frontend/hooks/useReceiveReadMsgHook";
 import useSocketErrorHook from "@frontend/hooks/useSocketErrorHook";
-import useMsgToFriendHook from "@frontend/hooks/useMsgToFriendHook";
+import useMsgToFriendHook from "@frontend/hooks/useMsgToFriendHook.jsx";
 import SpinnerMini from "@frontend/components/shared/SpinnerMini";
 import useChatHandlers from "@frontend/hooks/useChatHandlers";
 import useBlockStatusHooks from "@frontend/hooks/useBlockStatusHook";
