@@ -10,8 +10,6 @@ export default function useMsgToMeHook(roomId, setRoomState) {
     if (!roomId) return;
 
     const handleNewMsg = (insertedMsg) => {
-      console.log("📌insertedMsg received in useMsgToMeHook:", insertedMsg);
-
       setRoomState((state) => ({
         ...state,
         msgHistory:

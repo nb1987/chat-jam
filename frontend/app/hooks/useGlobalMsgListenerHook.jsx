@@ -1,7 +1,9 @@
 import { useContext, useEffect } from "react";
+import toast from "react-hot-toast";
 import { socket } from "@frontend/services/socket";
 import UnreadContext from "@frontend/contexts/unread-context";
 import CurrentRoomContext from "@frontend/contexts/current-room-context";
+import NewMessageAlert from "@frontend/components/notifications/NewMessageAlert";
 
 export default function useGlobalMsgListenerHook() {
   const { setUnreadCount } = useContext(UnreadContext);
@@ -17,6 +19,15 @@ export default function useGlobalMsgListenerHook() {
             [insertedMsg.room_id]: (currentCount || 0) + 1,
           };
         });
+
+      toast.custom(
+        (t) => (
+          <div className={t.visible ? "animate-enter" : "animate-leave"}>
+            <NewMessageAlert />
+          </div>
+        ),
+        { duration: 3000 }
+      );
     };
 
     socket.on("msgToFriend", handleGlobalUnreadCount);

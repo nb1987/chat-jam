@@ -2,7 +2,7 @@ import UnreadContext from "@frontend/contexts/unread-context";
 import { socket } from "@frontend/services/socket";
 import { useContext, useEffect } from "react";
 
-// { id, room_id, user_id, text, created_at, friend_id, is_read }
+// not using anywhere.
 export default function useRefreshChatSummaryHook() {
   const { setUnreadCount } = useContext(UnreadContext);
 

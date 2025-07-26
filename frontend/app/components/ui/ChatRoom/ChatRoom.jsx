@@ -18,7 +18,7 @@ import useScrollToBottomHook from "@frontend/hooks/useScrollToBottomHook";
 import useEmitUnreadMsgHook from "@frontend/hooks/useEmitUnreadMsgHook";
 import useReceiveReadMsgHook from "@frontend/hooks/useReceiveReadMsgHook";
 import useSocketErrorHook from "@frontend/hooks/useSocketErrorHook";
-import useMsgToFriendHook from "@frontend/hooks/useMsgToFriendHook.jsx";
+import useMsgToFriendHook from "@frontend/hooks/useMsgToFriendHook";
 import SpinnerMini from "@frontend/components/shared/SpinnerMini";
 import useChatHandlers from "@frontend/hooks/useChatHandlers";
 import useBlockStatusHooks from "@frontend/hooks/useBlockStatusHook";
@@ -41,16 +41,19 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
   const { id: friendId, username: friendName } = friendObj;
   const [isRoomReady, setIsRoomReady] = useState(false);
-  const [defaultPage, setDefaultPage] = useState(0);
-  const [fetchMoreMsg, setFetchMoreMsg] = useState(false);
+  const [messageCursor, setMessageCursor] = useState({
+    createdAt: null,
+    id: null,
+  }); // 🟩
+  const [isFetchMoreMsg, setIsFetchMoreMsg] = useState(false);
   const [blockFriend, setBlockFriend] = useBlockStatusHooks(
     friendId,
     authContext
   );
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true); // 📌
-  const scrollBottomRef = useRef(null); // 📌
-  const scrollRef = useRef(null); // 📌
-  const isLoadingMoreRef = useRef(false); // 📌
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [hasMoreChatHistory, setHasMoreChatHistory] = useState(true); // 🟩
+  const scrollBottomRef = useRef(null);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     userExitedOnPurpose.current = false;
@@ -70,17 +73,20 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     scrollBottomRef,
     roomState.msgHistory,
     shouldAutoScroll
-  ); // 📌
+  );
   useSocketErrorHook();
 
   const { onLocalMsgDelete, loadMoreMessages } = useChatHandlers({
-    setRoomState,
     authContext,
-    setShouldAutoScroll,
-    setFetchMoreMsg,
-    defaultPage,
+    friendId,
     roomState,
-    setDefaultPage,
+    setRoomState,
+    setShouldAutoScroll,
+    setIsFetchMoreMsg,
+    messageCursor,
+    setMessageCursor,
+    hasMoreChatHistory,
+    setHasMoreChatHistory,
   });
 
   const handleLeaveRoom = () => {
@@ -109,7 +115,8 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         const chatRoomId = await chatService.getChatRoomId(friendId);
         const chatHistory = await chatService.getChatHistory(
           chatRoomId,
-          friendId
+          friendId,
+          messageCursor
         );
 
         setRoomState((state) => ({
@@ -139,7 +146,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     return () => {
       abortController.abort();
     };
-  }, [authContext, setCurrentRoomId, friendId]);
+  }, [authContext, setCurrentRoomId, friendId, messageCursor]);
 
   // 📌 위&아래로 스크롤했을 때 실행됨, 스크롤이 맨 위로 도달하면 메시지 불러오기.
   const handleScroll = async () => {
@@ -158,8 +165,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
       setShouldAutoScroll(false);
     } // 메시지를 불러오는 중이 아니라면 스크롤이 내려가면 안됨
 
-    if (scrollTop === 0 && !fetchMoreMsg && !isLoadingMoreRef.current) {
-      isLoadingMoreRef.current = true;
+    if (scrollTop === 0 && !isFetchMoreMsg && hasMoreChatHistory) {
       const currentScrollHeight = msgContainer.scrollHeight;
 
       await loadMoreMessages();
@@ -169,8 +175,6 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         const heightDiff = newScrollHeight - currentScrollHeight;
         msgContainer.scrollTop = heightDiff;
       }, 0);
-
-      isLoadingMoreRef.current = false;
     }
   };
 
@@ -207,7 +211,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                 onScroll={handleScroll}
                 className="flex-1 overflow-y-auto space-y-2 px-1"
               >
-                {fetchMoreMsg && (
+                {isFetchMoreMsg && (
                   <div className="flex justify-center py-2">
                     <SpinnerMini />
                   </div>
@@ -221,8 +225,8 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                     friendInfo={friendObj}
                     onLocalMsgDelete={onLocalMsgDelete}
                     loadMoreMessages={loadMoreMessages}
-                    fetchMoreMsg={fetchMoreMsg}
-                    setFetchMoreMsg={setFetchMoreMsg}
+                    fetchMoreMsg={isFetchMoreMsg}
+                    setFetchMoreMsg={setIsFetchMoreMsg}
                   />
                 ))}
                 <div ref={scrollBottomRef} />

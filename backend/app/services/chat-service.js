@@ -1,61 +1,134 @@
 import pool from "../config/db.js";
 import { isSenderBlocked, getIdsWhoBlockedUser } from "./users-service.js";
 
-const not_blocked_q = `
-    SELECT *
-    FROM messages
+const not_blocked_with_cursor = () => {
+  return `
+    SELECT * FROM messages
+    WHERE room_id = $1
+    AND (
+      created_at < $2::timestamp 
+      OR (created_at = $2::timestamp AND id < $3)
+      )
+    ORDER BY created_at DESC, id DESC
+    LIMIT 10
+  `;
+}; // roomId, cursor, cursorId,
+
+const not_blocked_without_cursor = () => {
+  return `
+    SELECT * FROM messages
     WHERE room_id = $1
     ORDER BY created_at DESC, id DESC
-    LIMIT 50 OFFSET $2;
-  `; // 최신 메시지부터
-
-const blocked_q = `
-SELECT *
-FROM (
-  SELECT
-    id,
-    room_id,
-    user_id,
-    friend_id,
-    text,
-    created_at::timestamp,
-    is_deleted,
-    is_read
-  FROM messages
-  WHERE room_id = $1
-    
-  UNION ALL
-  SELECT 
-    id, 
-    room_id, 
-    sender_id AS user_id, 
-    receiver_id AS friend_id, 
-    text, 
-    created_at::timestamp, 
-    is_deleted, 
-    is_read
-  FROM blocked_messages
-  WHERE room_id = $1 AND sender_id = $2             
-) AS all_messages
-  ORDER BY created_at DESC, id DESC
-  LIMIT 50 OFFSET $3;
+    LIMIT 10
   `;
+};
 
-// OFFSET = 몇번째부터 데이터를 가져올 것인가. 1~50, 51~100
+const blocked_with_cursor = () => {
+  return `
+    SELECT * FROM (
+      SELECT 
+        id,
+        room_id,
+        user_id,
+        friend_id,
+        text,
+        created_at::timestamp,
+        is_deleted,
+        is_read
+      FROM messages 
+      WHERE user_id = $1 AND friend_id = $2
+      AND (created_at < $3 OR (created_at = $3 AND id < $4))
+
+      UNION ALL
+
+      SELECT 
+        id, 
+        room_id, 
+        sender_id AS user_id, 
+        receiver_id AS friend_id, 
+        text, 
+        created_at::timestamp, 
+        is_deleted, 
+        is_read
+      FROM blocked_messages 
+      WHERE sender_id = $1 AND receiver_id = $2  
+      AND (created_at < $3 OR (created_at = $3 AND id < $4))
+    ) AS all_messages
+    ORDER BY created_at DESC, id DESC
+    LIMIT 10
+  `;
+}; //    userId, friendId, cursor, cursorId,
+
+const blocked_without_cursor = () => {
+  return `
+    SELECT * FROM (
+      SELECT 
+        id,
+        room_id,
+        user_id,
+        friend_id,
+        text,
+        created_at::timestamp,
+        is_deleted,
+        is_read
+      FROM messages WHERE user_id = $1 AND friend_id = $2
+
+      UNION ALL
+
+      SELECT
+        id, 
+        room_id, 
+        sender_id AS user_id, 
+        receiver_id AS friend_id, 
+        text, 
+        created_at::timestamp, 
+        is_deleted, 
+        is_read
+      FROM blocked_messages WHERE sender_id = $1 AND receiver_id = $2    
+    ) AS all_messages
+    ORDER BY created_at DESC, id DESC
+    LIMIT 10
+  `;
+};
+
 export async function fetchChatRoomHistory(
   userId,
   roomId,
   friendId,
-  offset = 0
+  cursor = null,
+  cursorId = null
 ) {
   const isBlocked = await isSenderBlocked(userId, friendId);
 
   if (!isBlocked) {
-    const result = await pool.query(not_blocked_q, [roomId, offset]);
-    return Array.isArray(result.rows) ? result.rows : [];
+    if (cursor) {
+      const result = await pool.query(not_blocked_with_cursor(), [
+        roomId,
+        cursor,
+        cursorId,
+      ]);
+
+      return Array.isArray(result.rows) ? result.rows : [];
+    } else {
+      const result = await pool.query(not_blocked_without_cursor(), [roomId]);
+      return Array.isArray(result.rows) ? result.rows : [];
+    }
   } else {
-    const result = await pool.query(blocked_q, [roomId, userId, offset]);
-    return Array.isArray(result.rows) ? result.rows : [];
+    if (cursor) {
+      const result = await pool.query(blocked_with_cursor(), [
+        userId,
+        friendId,
+        cursor,
+        cursorId,
+      ]);
+      return Array.isArray(result.rows) ? result.rows : [];
+    } else {
+      const result = await pool.query(blocked_without_cursor(), [
+        userId,
+        friendId,
+      ]);
+      return Array.isArray(result.rows) ? result.rows : [];
+    }
   }
 }
 

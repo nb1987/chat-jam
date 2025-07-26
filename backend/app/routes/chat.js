@@ -17,12 +17,17 @@ router.get(
   async (req, res) => {
     try {
       const { roomId, friendId } = req.params;
-      const offset = parseInt(req.query.offset) || 0;
+      const cursor =
+        req.query?.cursor === "undefined" ? null : req.query?.cursor;
+      const cursorId =
+        req.query?.cursorId === "undefined" ? null : req.query?.cursorId;
+
       const history = await fetchChatRoomHistory(
         req.user.id,
         roomId,
         friendId,
-        offset
+        cursor,
+        cursorId
       );
       res.status(200).json(history);
     } catch (err) {

@@ -6,7 +6,6 @@ import Spinner from "@frontend/components/shared/Spinner";
 import ChatService from "@frontend/services/chat.service";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
 import ChatListItem from "../ui/ChatListItem";
-import useRefreshChatSummaryHook from "@frontend/hooks/useRefreshChatSummaryHook";
 import toast from "react-hot-toast";
 
 export default function Chat() {
@@ -61,8 +60,6 @@ export default function Chat() {
 
     fetchPageData();
   }, [authContext, unreadCount]);
-
-  useRefreshChatSummaryHook();
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;

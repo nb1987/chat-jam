@@ -1,7 +1,7 @@
 import TopNavigation from "./TopNavigation";
 import BottomNavigation from "./BottomNavigation";
 import { Outlet } from "react-router-dom";
-import useGlobalMsgListenerHook from "@frontend/hooks/useGlobalMsgListenerHook";
+import useGlobalMsgListenerHook from "@frontend/hooks/useGlobalMsgListenerHook.jsx";
 import useSocketDisconnectAlert from "@frontend/hooks/useSocketDisconnectAlert";
 
 export default function MainLayout() {

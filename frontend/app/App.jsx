@@ -49,8 +49,8 @@ function App() {
   ];
 
   const setSocketAndUnreadCount = async (accessToken) => {
-    const controller = new AbortController();
-    const chatService = new ChatService(controller, authContext);
+    const chatController = new AbortController();
+    const chatService = new ChatService(chatController, authContext);
     const decodedUser = jwtDecode(accessToken);
     registerSocket(socketInstance, decodedUser.id);
     try {
@@ -61,7 +61,7 @@ function App() {
       }, {}); // 초기값은 빈 객체로 시작함.
       setUnreadCount(unreadCountByRoom);
     } catch (err) {
-      if (!controller.signal.aborted) {
+      if (!chatController.signal.aborted) {
         console.log("Failed to get unread messages count.", err.message);
       }
     }

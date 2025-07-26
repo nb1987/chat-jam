@@ -32,12 +32,18 @@ class ChatService {
     return data;
   }
 
-  async getChatHistory(roomId, friendId, offset) {
-    const data = await this.client.get(
-      offset
-        ? `/api/chat//history/${roomId}/${friendId}?offset=${offset}`
-        : `/api/chat//history/${roomId}/${friendId}`
-    );
+  async getChatHistory(roomId, friendId, cursor) {
+    const isCursorValid =
+      !!cursor?.createdAt &&
+      cursor.createdAt !== "undefined" &&
+      !!cursor?.id &&
+      cursor.id !== "undefined";
+
+    const url = isCursorValid
+      ? `/api/chat/history/${roomId}/${friendId}?cursor=${cursor.createdAt}&cursorId=${cursor.id}`
+      : `/api/chat/history/${roomId}/${friendId}`;
+
+    const data = await this.client.get(url);
     return data;
   }
 }
