@@ -33,11 +33,7 @@ class ChatService {
   }
 
   async getChatHistory(roomId, friendId, cursor) {
-    const isCursorValid =
-      !!cursor?.createdAt &&
-      cursor.createdAt !== "undefined" &&
-      !!cursor?.id &&
-      cursor.id !== "undefined";
+    const isCursorValid = Boolean(cursor?.createdAt && cursor?.id);
 
     const url = isCursorValid
       ? `/api/chat/history/${roomId}/${friendId}?cursor=${cursor.createdAt}&cursorId=${cursor.id}`

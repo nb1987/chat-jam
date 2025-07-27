@@ -1,6 +1,30 @@
 import pool from "../config/db.js";
 import { isSenderBlocked, getIdsWhoBlockedUser } from "./users-service.js";
 
+const PAGE_SIZE = 10;
+
+const MESSAGES_BASE_COLUMNS = `
+  id,
+  room_id,
+  user_id,
+  friend_id,
+  text,
+  created_at::timestamp,
+  is_deleted,
+  is_read
+`;
+
+const BLOCKED_MESSAGES_BASE_COLUMNS = `
+  id, 
+  room_id, 
+  sender_id AS user_id, 
+  receiver_id AS friend_id, 
+  text, 
+  created_at::timestamp, 
+  is_deleted, 
+  is_read
+`;
+
 const not_blocked_with_cursor = () => {
   return `
     SELECT * FROM messages
@@ -10,7 +34,7 @@ const not_blocked_with_cursor = () => {
       OR (created_at = $2::timestamp AND id < $3)
       )
     ORDER BY created_at DESC, id DESC
-    LIMIT 10
+    LIMIT 11
   `;
 }; // roomId, cursor, cursorId,
 
@@ -19,75 +43,45 @@ const not_blocked_without_cursor = () => {
     SELECT * FROM messages
     WHERE room_id = $1
     ORDER BY created_at DESC, id DESC
-    LIMIT 10
+    LIMIT 11
   `;
 };
 
 const blocked_with_cursor = () => {
   return `
     SELECT * FROM (
-      SELECT 
-        id,
-        room_id,
-        user_id,
-        friend_id,
-        text,
-        created_at::timestamp,
-        is_deleted,
-        is_read
+      SELECT ${MESSAGES_BASE_COLUMNS}
       FROM messages 
       WHERE user_id = $1 AND friend_id = $2
       AND (created_at < $3 OR (created_at = $3 AND id < $4))
 
       UNION ALL
 
-      SELECT 
-        id, 
-        room_id, 
-        sender_id AS user_id, 
-        receiver_id AS friend_id, 
-        text, 
-        created_at::timestamp, 
-        is_deleted, 
-        is_read
+      SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}
       FROM blocked_messages 
       WHERE sender_id = $1 AND receiver_id = $2  
-      AND (created_at < $3 OR (created_at = $3 AND id < $4))
-    ) AS all_messages
+      AND (
+        created_at < $3 
+        OR (created_at = $3 AND id < $4))
+        ) AS all_messages
     ORDER BY created_at DESC, id DESC
-    LIMIT 10
+    LIMIT 11
   `;
 }; //    userId, friendId, cursor, cursorId,
 
 const blocked_without_cursor = () => {
   return `
     SELECT * FROM (
-      SELECT 
-        id,
-        room_id,
-        user_id,
-        friend_id,
-        text,
-        created_at::timestamp,
-        is_deleted,
-        is_read
+      SELECT ${MESSAGES_BASE_COLUMNS}
       FROM messages WHERE user_id = $1 AND friend_id = $2
 
       UNION ALL
 
-      SELECT
-        id, 
-        room_id, 
-        sender_id AS user_id, 
-        receiver_id AS friend_id, 
-        text, 
-        created_at::timestamp, 
-        is_deleted, 
-        is_read
+      SELECT SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}
       FROM blocked_messages WHERE sender_id = $1 AND receiver_id = $2    
     ) AS all_messages
     ORDER BY created_at DESC, id DESC
-    LIMIT 10
+    LIMIT 11
   `;
 };
 
@@ -99,37 +93,42 @@ export async function fetchChatRoomHistory(
   cursorId = null
 ) {
   const isBlocked = await isSenderBlocked(userId, friendId);
+  let rows;
 
   if (!isBlocked) {
     if (cursor) {
-      const result = await pool.query(not_blocked_with_cursor(), [
+      ({ rows } = await pool.query(not_blocked_with_cursor(), [
         roomId,
         cursor,
         cursorId,
-      ]);
-
-      return Array.isArray(result.rows) ? result.rows : [];
+      ]));
     } else {
-      const result = await pool.query(not_blocked_without_cursor(), [roomId]);
-      return Array.isArray(result.rows) ? result.rows : [];
+      ({ rows } = await pool.query(not_blocked_without_cursor(), [roomId]));
     }
   } else {
     if (cursor) {
-      const result = await pool.query(blocked_with_cursor(), [
+      ({ rows } = await pool.query(blocked_with_cursor(), [
         userId,
         friendId,
         cursor,
         cursorId,
-      ]);
-      return Array.isArray(result.rows) ? result.rows : [];
+      ]));
     } else {
-      const result = await pool.query(blocked_without_cursor(), [
+      ({ rows } = await pool.query(blocked_without_cursor(), [
         userId,
         friendId,
-      ]);
-      return Array.isArray(result.rows) ? result.rows : [];
+      ]));
     }
   }
+  const hasMore = rows.length > PAGE_SIZE;
+  const messages = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+  const nextCursor = hasMore
+    ? {
+        createdAt: rows[rows.length - 1].created_at.toISOString(),
+        id: rows[rows.length - 1].id,
+      }
+    : { createdAt: null, id: null };
+  return { messages, nextCursor, hasMore };
 }
 
 export async function getOrCreateRoomId(userId, friendId) {

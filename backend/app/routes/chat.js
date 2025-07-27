@@ -17,19 +17,17 @@ router.get(
   async (req, res) => {
     try {
       const { roomId, friendId } = req.params;
-      const cursor =
-        req.query?.cursor === "undefined" ? null : req.query?.cursor;
-      const cursorId =
-        req.query?.cursorId === "undefined" ? null : req.query?.cursorId;
+      const cursor = req.query?.cursor || null;
+      const cursorId = req.query?.cursorId || null;
 
-      const history = await fetchChatRoomHistory(
+      const { messages, nextCursor, hasMore } = await fetchChatRoomHistory(
         req.user.id,
         roomId,
         friendId,
         cursor,
         cursorId
       );
-      res.status(200).json(history);
+      res.status(200).json({ messages, nextCursor, hasMore });
     } catch (err) {
       console.error("fetching error,", err.message);
       res.status(500).json({ error: "Failed to fetch chat history" });

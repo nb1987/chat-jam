@@ -44,14 +44,14 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   const [messageCursor, setMessageCursor] = useState({
     createdAt: null,
     id: null,
-  }); // 🟩
+  });
   const [isFetchMoreMsg, setIsFetchMoreMsg] = useState(false);
   const [blockFriend, setBlockFriend] = useBlockStatusHooks(
     friendId,
     authContext
   );
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-  const [hasMoreChatHistory, setHasMoreChatHistory] = useState(true); // 🟩
+  const [hasMoreChatHistory, setHasMoreChatHistory] = useState(true);
   const scrollBottomRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -82,6 +82,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     roomState,
     setRoomState,
     setShouldAutoScroll,
+    isFetchMoreMsg,
     setIsFetchMoreMsg,
     messageCursor,
     setMessageCursor,
@@ -113,23 +114,22 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         setRoomState((state) => ({ ...state, isLoading: true }));
         const myData = await accountService.getUserInfo();
         const chatRoomId = await chatService.getChatRoomId(friendId);
-        const chatHistory = await chatService.getChatHistory(
-          chatRoomId,
-          friendId,
-          messageCursor
-        );
+        const { messages, nextCursor, hasMore } =
+          await chatService.getChatHistory(chatRoomId, friendId, messageCursor);
 
         setRoomState((state) => ({
           ...state,
           isLoading: false,
           roomId: chatRoomId,
-          msgHistory: [...chatHistory].reverse(),
+          msgHistory: [...messages].reverse(),
           myInfo: myData,
         }));
 
         setIsRoomReady(true);
         joinRoom(chatRoomId);
         setCurrentRoomId(chatRoomId);
+        setMessageCursor(nextCursor); //🟩
+        setHasMoreChatHistory(hasMore);
       } catch (err) {
         if (!abortController.signal.aborted) {
           console.error(err);
@@ -146,11 +146,11 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     return () => {
       abortController.abort();
     };
-  }, [authContext, setCurrentRoomId, friendId, messageCursor]);
+  }, [authContext, setCurrentRoomId, friendId]);
 
-  // 📌 위&아래로 스크롤했을 때 실행됨, 스크롤이 맨 위로 도달하면 메시지 불러오기.
   const handleScroll = async () => {
     const msgContainer = scrollRef.current;
+
     const { scrollTop, scrollHeight, clientHeight } = msgContainer;
     // scrollTop: 스크롤된 거리 (위에서 얼마나 내려갔나)
     // scrollHeight: 스크롤 가능한 전체 콘텐츠 높이
@@ -170,11 +170,13 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 
       await loadMoreMessages();
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const newScrollHeight = msgContainer.scrollHeight;
         const heightDiff = newScrollHeight - currentScrollHeight;
         msgContainer.scrollTop = heightDiff;
-      }, 0);
+        // 추가된 높이만큼 scrollTop을 올려줘서
+        // 뷰포트에 보이던 메시지들이 스크롤 위치 기준으로 그대로 남게 함
+      });
     }
   };
 

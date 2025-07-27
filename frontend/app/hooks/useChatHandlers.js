@@ -2,16 +2,17 @@ import ChatService from "@frontend/services/chat.service";
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 
-// move `loadMoreMessages` logic from `ChatRoom`
 export default function useChatHandlers({
   authContext,
   friendId,
   roomState,
   setRoomState,
   setShouldAutoScroll,
+  isFetchMoreMsg,
   setIsFetchMoreMsg,
   messageCursor,
   setMessageCursor,
+  hasMoreChatHistory,
   setHasMoreChatHistory,
 }) {
   const onLocalMsgDelete = useCallback(
@@ -26,44 +27,29 @@ export default function useChatHandlers({
     [setRoomState]
   );
 
-  const PAGE_SIZE = 10;
-
   const loadMoreMessages = useCallback(async () => {
     const controller = new AbortController();
     const chatService = new ChatService(controller, authContext);
+
+    if (!hasMoreChatHistory || isFetchMoreMsg) return;
+
     try {
       setShouldAutoScroll(false);
       setIsFetchMoreMsg(true);
 
-      const prevCursor = messageCursor; //
-
-      const moreHistory = await chatService.getChatHistory(
-        roomState.roomId,
-        friendId,
-        messageCursor
-      );
-
-      if (moreHistory.length < PAGE_SIZE) {
-        setHasMoreChatHistory(false); // 더 가져올 메시지 없음
-      }
-      if (
-        moreHistory.length > 0 &&
-        prevCursor &&
-        prevCursor.created_at ===
-          moreHistory[moreHistory.length - 1].created_at &&
-        prevCursor.id === moreHistory[moreHistory.length - 1].id
-      )
-        return;
-
-      if (moreHistory.length > 0) {
-        const oldest = moreHistory[moreHistory.length - 1]; // 업데이트 전 길이 체크
-        setMessageCursor({ created_at: oldest.created_at, id: oldest.id });
-      } // 커서 설정 전 null 체크
+      const { messages, nextCursor, hasMore } =
+        await chatService.getChatHistory(
+          roomState.roomId,
+          friendId,
+          messageCursor
+        );
 
       setRoomState((state) => ({
         ...state,
-        msgHistory: [...moreHistory.reverse(), ...state.msgHistory],
+        msgHistory: [...[...messages].reverse(), ...state.msgHistory],
       }));
+      setHasMoreChatHistory(hasMore);
+      setMessageCursor(nextCursor);
     } catch (err) {
       if (!controller.signal.aborted) {
         console.error(err);
@@ -78,9 +64,11 @@ export default function useChatHandlers({
     roomState,
     setRoomState,
     setShouldAutoScroll,
+    isFetchMoreMsg,
     setIsFetchMoreMsg,
     messageCursor,
     setMessageCursor,
+    hasMoreChatHistory,
     setHasMoreChatHistory,
   ]);
 

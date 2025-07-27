@@ -12,12 +12,13 @@ export default function useMsgToFriendHook(setRoomState) {
 
   useEffect(() => {
     const handleNewMsg = (insertedMsg) => {
-      setRoomState((state) => ({
-        ...state,
-        msgHistory: state.msgHistory.some((m) => m.id === insertedMsg.id)
-          ? state.msgHistory // prevent inserting duplicate msg
-          : [...state.msgHistory, insertedMsg],
-      }));
+      if (insertedMsg.room_id == currentRoomId)
+        setRoomState((state) => ({
+          ...state,
+          msgHistory: state.msgHistory.some((m) => m.id === insertedMsg.id)
+            ? state.msgHistory // prevent inserting duplicate msg
+            : [...state.msgHistory, insertedMsg],
+        }));
     };
 
     socket.on("msgToFriend", handleNewMsg); // 메시지를 받는 이벤트가 발생함.
