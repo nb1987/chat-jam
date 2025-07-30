@@ -2,44 +2,66 @@ import { insertMsg, updateMsgAsRead } from "./chat-service.js";
 import { isSenderBlocked } from "./users-service.js";
 
 // io: 카톡 본사 서버
-// io.on("connection", (socket) => {..}
-// 내가 앱으로 접속하면 본사 서버로 연결 요청을 한 것, "connection" 콜백 실행
+// io.on("connection", ..} 의 뜻은
+// 내가 로그인을 했고, (프론트에서 socket.connect() 실행함 )
+// 본사 서버로 내 소켓이 연결 요청을 하자 "connection" 콜백 실행
 
-// 내 소켓 아이디를 저장, Map {'user123' => 'socket_abc'}`
 export default function socketHandler(io) {
-  const userSocketMap = new Map();
+  const pendingLastMsgs = new Map();
+  const timers = new Map();
 
   io.on("connection", (socket) => {
     console.log("📍Backend socket is connected: ", socket.id);
 
     socket.on("register", async (userId) => {
-      userSocketMap.set(userId, socket.id);
+      socket.userId = userId;
+      socket.join(`user_${userId}`); // 개인 알림용 룸에 들어감.
     });
 
     socket.on("joinRoom", (roomId) => {
-      socket.join(roomId);
+      socket.join(`room_${roomId}`);
       console.log("📍Joined the chat room");
     });
 
     socket.on("leaveRoom", (roomId) => {
-      socket.leave(roomId);
+      socket.leave(`room_${roomId}`);
     });
 
-    //프론트에서 내가 메시지를 보냈고, DB에 저장함
-    // { id, room_id, user_id, text, created_at, friend_id, is_read } = insertedMsg
+    // { id, room_id, user_id, friend_id, text, created_at, is_read } = insertedMsg
     socket.on("sendMsg", async ({ roomId, text, senderId, friendId }) => {
       try {
-        const receiverSocketId = userSocketMap.get(friendId);
         const insertedMsg = await insertMsg(roomId, text, senderId, friendId);
         const senderIsBlocked = await isSenderBlocked(senderId, friendId);
-
-        socket.emit("msgToMe", insertedMsg); // 나에게 보내서 UI 업데이트
+        pendingLastMsgs.set(roomId, insertedMsg);
 
         if (!senderIsBlocked) {
-          // 친구가 소켓 연결이 된 상태(로그인을 함)
-          if (receiverSocketId) {
-            io.to(receiverSocketId).emit("msgToFriend", insertedMsg);
+          io.to(`room_${roomId}`).emit("messageToRoom", insertedMsg);
+          io.to(`user_${friendId}`).emit("notifyMessage", insertedMsg);
+
+          // need username, userImgSrc
+          if (!timers.has(roomId)) {
+            const timerId = setTimeout(() => {
+              const last = pendingLastMsgs.get(roomId);
+              // 객체에 이름을 붙여서 보낼 순 없을까
+              // 내가 차단을 안 당했다면 채팅방 소속인 나와 상대의 chat 페이지도 동시에 업데이트
+              io.to(`room_${roomId}`).emit("updateChatSummary", {
+                room_id: last.room_id,
+                lastMsg: last.text,
+                lastMsgAt: last.created_at,
+              });
+              pendingLastMsgs.delete(roomId);
+              timers.delete(roomId);
+            }, 200);
+
+            timers.set(roomId, timerId);
           }
+        } else {
+          socket.emit("msgToMe", insertedMsg); // chatRoom
+          socket.emit("updateChatSummary", {
+            id: friendId,
+            lastMsg: last.text,
+            lastMsgAt: last.created_at,
+          }); // chat
         }
       } catch (err) {
         console.error("Failed to insert message:", err.message);
@@ -54,7 +76,7 @@ export default function socketHandler(io) {
       try {
         const updatedMsgs = await updateMsgAsRead(unreadMsgIds, roomId);
         updatedMsgs.map((readMsg) => {
-          io.to(roomId).emit("receiveReadMsg", readMsg);
+          io.to(`room_${roomId}`).emit("receiveReadMsg", readMsg);
         });
         callback({ success: true });
       } catch (err) {

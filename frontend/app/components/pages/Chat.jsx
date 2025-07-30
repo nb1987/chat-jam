@@ -1,12 +1,14 @@
 import { jwtDecode } from "jwt-decode";
 import { useContext, useEffect, useState } from "react";
+import { socket } from "@frontend/services/socket";
+import toast from "react-hot-toast";
 import AuthContext from "@frontend/contexts/auth-context";
 import UnreadContext from "@frontend/contexts/unread-context";
 import Spinner from "@frontend/components/shared/Spinner";
 import ChatService from "@frontend/services/chat.service";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
-import ChatListItem from "../ui/ChatListItem";
-import toast from "react-hot-toast";
+import ChatListItem from "@frontend/components/ui/ChatListItem";
+import useUpdateChatSummaryHook from "@frontend/hooks/useUpdateChatSummaryHook";
 
 export default function Chat() {
   const { unreadCount } = useContext(UnreadContext);
@@ -28,38 +30,49 @@ export default function Chat() {
     0
   );
   // {id, username, userImgSrc, lastMsg,lastMsgAt, lastMsgSenderId, lastMsgIsRead, room_id, }
+  const fetchPageData = async () => {
+    const abortController = new AbortController();
+    const chatService = new ChatService(abortController, authContext);
+
+    try {
+      setPage((state) => ({ ...state, isLoading: true }));
+      const data = await chatService.getChatSummaries();
+
+      setPage((state) => ({
+        ...state,
+        isLoading: false,
+        chatSummaries: data,
+      }));
+    } catch (err) {
+      if (!abortController.signal.aborted) {
+        console.error(err);
+        setPage((state) => ({
+          ...state,
+          error: "Unexpected error while loading data",
+          isLoading: false,
+        }));
+        toast.error("Unexpected error while loading data");
+      }
+    }
+  };
 
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";
 
-    const fetchPageData = async () => {
-      const abortController = new AbortController();
-      const chatService = new ChatService(abortController, authContext);
-
-      try {
-        setPage((state) => ({ ...state, isLoading: true }));
-        const data = await chatService.getChatSummaries();
-
-        setPage((state) => ({
-          ...state,
-          isLoading: false,
-          chatSummaries: data,
-        }));
-      } catch (err) {
-        if (!abortController.signal.aborted) {
-          console.error(err);
-          setPage((state) => ({
-            ...state,
-            error: "Unexpected error while loading data",
-            isLoading: false,
-          }));
-          toast.error("Unexpected error while loading data");
-        }
-      }
-    };
-
     fetchPageData();
-  }, [authContext, unreadCount]);
+
+    const onFocus = () => fetchPageData(); // 윈도우 포커스 시 동기화
+    window.addEventListener("focus", onFocus);
+
+    socket.on("connect", fetchPageData); // 소켓 재연결 시 동기화
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      socket.off("connect", fetchPageData);
+    };
+  }, [unreadCount]);
+
+  useUpdateChatSummaryHook(setPage);
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;

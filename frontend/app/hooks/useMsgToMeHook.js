@@ -1,11 +1,7 @@
 import { socket } from "@frontend/services/socket";
 import { useEffect } from "react";
 
-// msg that I sent to friend is saved in DB and came back to me
-// to update my UI.
 export default function useMsgToMeHook(roomId, setRoomState) {
-  // 내가 보낸 메시지가 db에 저장되어 돌아옴 => UI 업데이트
-
   useEffect(() => {
     if (!roomId) return;
 

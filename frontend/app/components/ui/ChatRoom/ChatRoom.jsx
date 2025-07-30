@@ -18,7 +18,7 @@ import useScrollToBottomHook from "@frontend/hooks/useScrollToBottomHook";
 import useEmitUnreadMsgHook from "@frontend/hooks/useEmitUnreadMsgHook";
 import useReceiveReadMsgHook from "@frontend/hooks/useReceiveReadMsgHook";
 import useSocketErrorHook from "@frontend/hooks/useSocketErrorHook";
-import useMsgToFriendHook from "@frontend/hooks/useMsgToFriendHook";
+import useMsgToRoomHook from "@frontend/hooks/useMsgToRoomHook";
 import SpinnerMini from "@frontend/components/shared/SpinnerMini";
 import useChatHandlers from "@frontend/hooks/useChatHandlers";
 import useBlockStatusHooks from "@frontend/hooks/useBlockStatusHook";
@@ -60,7 +60,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   }, [userExitedOnPurpose]);
 
   useMsgToMeHook(roomState.roomId, setRoomState);
-  useMsgToFriendHook(setRoomState); // 친구는 로그인한 상태
+  useMsgToRoomHook(setRoomState, roomState.myInfo.id);
 
   useEmitUnreadMsgHook(
     roomState.msgHistory,
@@ -72,7 +72,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   useScrollToBottomHook(
     scrollBottomRef,
     roomState.msgHistory,
-    shouldAutoScroll
+    shouldAutoScroll && hasMoreChatHistory
   );
   useSocketErrorHook();
 
@@ -126,9 +126,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         }));
 
         setIsRoomReady(true);
-        joinRoom(chatRoomId);
-        setCurrentRoomId(chatRoomId);
-        setMessageCursor(nextCursor); //🟩
+        setMessageCursor(nextCursor);
         setHasMoreChatHistory(hasMore);
       } catch (err) {
         if (!abortController.signal.aborted) {
@@ -146,15 +144,21 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
     return () => {
       abortController.abort();
     };
-  }, [authContext, setCurrentRoomId, friendId]);
+  }, [friendId]);
 
+  useEffect(() => {
+    if (!roomState.roomId) return;
+    joinRoom(roomState.roomId);
+    setCurrentRoomId(roomState.roomId);
+  }, [roomState.roomId]);
+
+  // scrollTop: 맨 위에서 스크롤이 얼마나 내려갔나 (내려가면 값 증가)
+  // scrollHeight: 스크롤 가능한 높이 (메시지가 증가하면 높이도 증가)
+  // clientHeight: 메시지가 보여지는 채팅 컨테이너 높이
   const handleScroll = async () => {
     const msgContainer = scrollRef.current;
 
     const { scrollTop, scrollHeight, clientHeight } = msgContainer;
-    // scrollTop: 스크롤된 거리 (위에서 얼마나 내려갔나)
-    // scrollHeight: 스크롤 가능한 전체 콘텐츠 높이
-    // clientHeight: 실제로 보이는 채팅창 높이
 
     // 스크롤이 맨 아래에 있나 확인함. 5px 이내로 가까우면 true.
     const isAtBottom = scrollTop + clientHeight >= scrollHeight - 5;
@@ -163,8 +167,9 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
       setShouldAutoScroll(true);
     } else {
       setShouldAutoScroll(false);
-    } // 메시지를 불러오는 중이 아니라면 스크롤이 내려가면 안됨
+    }
 
+    // 메시지를 더 부르기 전, 현재 스크롤이 가능한 높이를 저장함
     if (scrollTop === 0 && !isFetchMoreMsg && hasMoreChatHistory) {
       const currentScrollHeight = msgContainer.scrollHeight;
 
@@ -174,8 +179,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
         const newScrollHeight = msgContainer.scrollHeight;
         const heightDiff = newScrollHeight - currentScrollHeight;
         msgContainer.scrollTop = heightDiff;
-        // 추가된 높이만큼 scrollTop을 올려줘서
-        // 뷰포트에 보이던 메시지들이 스크롤 위치 기준으로 그대로 남게 함
+        // 과거의 메시지 불러와도 스크롤의 위치는 유지
       });
     }
   };

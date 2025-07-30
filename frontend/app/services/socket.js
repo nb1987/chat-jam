@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-export const socket = io(); // 내 스마트폰의 카카오톡 앱
+export const socket = io(); // 내 카톡 앱, 로그인 후(App) 서버로 연결을 실행함
 
 export const registerSocket = (socket, userId) => {
   if (socket.connected) {

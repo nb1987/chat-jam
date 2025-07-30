@@ -50,20 +50,25 @@ const not_blocked_without_cursor = () => {
 const blocked_with_cursor = () => {
   return `
     SELECT * FROM (
-      SELECT ${MESSAGES_BASE_COLUMNS}
+      SELECT ${MESSAGES_BASE_COLUMNS}, 'messages' AS source
       FROM messages 
-      WHERE user_id = $1 AND friend_id = $2
-      AND (created_at < $3 OR (created_at = $3 AND id < $4))
+      WHERE 
+        (user_id = $1 AND friend_id = $2)
+        OR
+        (user_id = $2 AND friend_id = $1)
 
       UNION ALL
 
-      SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}
+      SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}, 'blocked' AS source
       FROM blocked_messages 
-      WHERE sender_id = $1 AND receiver_id = $2  
-      AND (
-        created_at < $3 
-        OR (created_at = $3 AND id < $4))
-        ) AS all_messages
+      WHERE 
+        (sender_id = $1 AND receiver_id = $2)  
+        OR
+        (sender_id = $2 AND receiver_id = $1) 
+    ) AS all_messages
+    WHERE 
+      (created_at < $3)
+      OR (created_at = $3 AND id < $4)
     ORDER BY created_at DESC, id DESC
     LIMIT 11
   `;
@@ -73,18 +78,28 @@ const blocked_without_cursor = () => {
   return `
     SELECT * FROM (
       SELECT ${MESSAGES_BASE_COLUMNS}
-      FROM messages WHERE user_id = $1 AND friend_id = $2
+      FROM messages 
+      WHERE 
+        (user_id = $1 AND friend_id = $2)
+        OR
+        (user_id = $2 AND friend_id = $1)
 
       UNION ALL
 
-      SELECT SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}
-      FROM blocked_messages WHERE sender_id = $1 AND receiver_id = $2    
+      SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}
+      FROM blocked_messages 
+      WHERE 
+        (sender_id = $1 AND receiver_id = $2)  
+        OR
+        (sender_id = $2 AND receiver_id = $1)    
     ) AS all_messages
     ORDER BY created_at DESC, id DESC
     LIMIT 11
-  `;
+  `; //  userId, friendId,
 };
 
+// ({ rows } = await pool.query(...)) 괄호로 {row}를 감싼 이유는:
+// 이미 변수가 선언되어 있고, 다른 값을 할당할 때 씀.
 export async function fetchChatRoomHistory(
   userId,
   roomId,
@@ -163,7 +178,15 @@ async function insertBlockedMsg(roomId, text, senderId, friendId) {
   const q = `
     INSERT INTO blocked_messages (room_id, text, sender_id, receiver_id)
     VALUES ($1, $2, $3, $4)
-    RETURNING *
+    RETURNING 
+      id,
+      created_at,
+      room_id,
+      sender_id AS user_id,
+      receiver_id AS friend_id,
+      text,
+      is_deleted,
+      is_read
   `;
   const result = await pool.query(q, [roomId, text, senderId, friendId]);
   return result.rows[0];

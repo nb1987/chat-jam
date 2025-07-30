@@ -14,7 +14,6 @@ export default function useGlobalMsgListenerHook() {
       if (insertedMsg.room_id !== currentRoomId) {
         setUnreadCount((count) => {
           const currentCount = count[insertedMsg.room_id];
-
           return {
             ...count,
             [insertedMsg.room_id]: (currentCount || 0) + 1,
@@ -32,7 +31,9 @@ export default function useGlobalMsgListenerHook() {
       }
     };
 
-    socket.on("msgToFriend", handleGlobalUnreadCount);
-    return () => socket.off("msgToFriend", handleGlobalUnreadCount);
+    socket.on("notifyMessage", handleGlobalUnreadCount);
+    return () => {
+      socket.off("notifyMessage", handleGlobalUnreadCount);
+    };
   }, [setUnreadCount, currentRoomId]);
 }
