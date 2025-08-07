@@ -1,33 +1,11 @@
 import pool from "../config/db.js";
-import { isSenderBlocked, getIdsWhoBlockedUser } from "./users-service.js";
+import { isSenderBlocked } from "./users-service.js";
 
 const PAGE_SIZE = 10;
 
-const MESSAGES_BASE_COLUMNS = `
-  id,
-  room_id,
-  user_id,
-  friend_id,
-  text,
-  created_at::timestamp,
-  is_deleted,
-  is_read
-`;
-
-const BLOCKED_MESSAGES_BASE_COLUMNS = `
-  id, 
-  room_id, 
-  sender_id AS user_id, 
-  receiver_id AS friend_id, 
-  text, 
-  created_at::timestamp, 
-  is_deleted, 
-  is_read
-`;
-
 const not_blocked_with_cursor = () => {
   return `
-    SELECT * FROM messages
+    SELECT * FROM messages_columns_arranged
     WHERE room_id = $1
     AND (
       created_at < $2::timestamp 
@@ -40,7 +18,7 @@ const not_blocked_with_cursor = () => {
 
 const not_blocked_without_cursor = () => {
   return `
-    SELECT * FROM messages
+    SELECT * FROM messages_columns_arranged
     WHERE room_id = $1
     ORDER BY created_at DESC, id DESC
     LIMIT 11
@@ -50,21 +28,21 @@ const not_blocked_without_cursor = () => {
 const blocked_with_cursor = () => {
   return `
     SELECT * FROM (
-      SELECT ${MESSAGES_BASE_COLUMNS}, 'messages' AS source
-      FROM messages 
+      SELECT *, 'messages' AS source
+      FROM messages_columns_arranged AS m
       WHERE 
-        (user_id = $1 AND friend_id = $2)
+        (m.user_id = $1 AND m.friend_id = $2)
         OR
-        (user_id = $2 AND friend_id = $1)
+        (m.user_id = $2 AND m.friend_id = $1)
 
       UNION ALL
 
-      SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}, 'blocked' AS source
-      FROM blocked_messages 
+      SELECT *, 'blocked' AS source
+      FROM blocked_messages AS bm
       WHERE 
-        (sender_id = $1 AND receiver_id = $2)  
+        (bm.user_id = $1 AND bm.friend_id = $2)  
         OR
-        (sender_id = $2 AND receiver_id = $1) 
+        (bm.user_id = $2 AND bm.friend_id = $1) 
     ) AS all_messages
     WHERE 
       (created_at < $3)
@@ -77,21 +55,21 @@ const blocked_with_cursor = () => {
 const blocked_without_cursor = () => {
   return `
     SELECT * FROM (
-      SELECT ${MESSAGES_BASE_COLUMNS}
-      FROM messages 
+      SELECT *, 'messages' AS source
+      FROM messages_columns_arranged AS m
       WHERE 
-        (user_id = $1 AND friend_id = $2)
+        (m.user_id = $1 AND m.friend_id = $2)
         OR
-        (user_id = $2 AND friend_id = $1)
+        (m.user_id = $2 AND m.friend_id = $1)
 
       UNION ALL
 
-      SELECT ${BLOCKED_MESSAGES_BASE_COLUMNS}
-      FROM blocked_messages 
+      SELECT *, 'blocked' AS source
+      FROM blocked_messages AS bm
       WHERE 
-        (sender_id = $1 AND receiver_id = $2)  
+        (bm.user_id = $1 AND bm.friend_id = $2)  
         OR
-        (sender_id = $2 AND receiver_id = $1)    
+        (bm.user_id = $2 AND bm.friend_id = $1)    
     ) AS all_messages
     ORDER BY created_at DESC, id DESC
     LIMIT 11
@@ -174,77 +152,91 @@ export async function getOrCreateRoomId(userId, friendId) {
   }
 }
 
-async function insertBlockedMsg(roomId, text, senderId, friendId) {
+async function insertBlockedMsg(
+  roomId,
+  text,
+  senderId,
+  friendId,
+  clientCreatedAt
+) {
   const q = `
-    INSERT INTO blocked_messages (room_id, text, sender_id, receiver_id)
-    VALUES ($1, $2, $3, $4)
-    RETURNING 
-      id,
-      created_at,
-      room_id,
-      sender_id AS user_id,
-      receiver_id AS friend_id,
-      text,
-      is_deleted,
-      is_read
+    INSERT INTO blocked_messages (room_id, text, user_id, friend_id, client_created_at)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *
   `;
-  const result = await pool.query(q, [roomId, text, senderId, friendId]);
+  const result = await pool.query(q, [
+    roomId,
+    text,
+    senderId,
+    friendId,
+    clientCreatedAt,
+  ]);
   return result.rows[0];
 }
 
-export async function insertMsg(roomId, text, senderId, friendId) {
+export async function insertMsg(
+  roomId,
+  text,
+  senderId,
+  friendId,
+  clientCreatedAt
+) {
   const q = `
-    INSERT INTO messages (room_id, text, user_id, friend_id)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO messages (room_id, text, user_id, friend_id, client_created_at)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
 
   const isBlocked = await isSenderBlocked(senderId, friendId);
   if (isBlocked) {
-    return insertBlockedMsg(roomId, text, senderId, friendId);
+    return insertBlockedMsg(roomId, text, senderId, friendId, clientCreatedAt);
   } else {
-    const result = await pool.query(q, [roomId, text, senderId, friendId]);
+    const result = await pool.query(q, [
+      roomId,
+      text,
+      senderId,
+      friendId,
+      clientCreatedAt,
+    ]);
     return result.rows[0];
   }
 }
 
-// 나와 대화한 상대방은 누구인가를(other_user_id) 정의함.
+// room_id  text  created_at  is_read  sender_id  other_user_id
+//    10                                  1             2
+//    10                                  2             1
+//    100                                 2             1
 function mergedMsgTable() {
   return `
-    SELECT
-     room_id,
-     text,
-     created_at::timestamp,
-     is_read,
-     user_id AS sender_id,
-     CASE WHEN user_id = $1 THEN friend_id
-          ELSE user_id
-          END AS other_user_id
+    SELECT 
+      room_id,
+      text,
+      created_at::timestamp,
+      is_read,
+      user_id AS sender_id,
+      CASE WHEN user_id = $1 THEN friend_id
+           ELSE user_id
+           END AS other_user_id
     FROM messages
-    WHERE user_id = $1 AND friend_id = ANY($2)
-       OR friend_id = $1 AND user_id = ANY($2)
-    
-  UNION ALL
-
-  SELECT  
-    room_id, 
-    text, 
-    created_at::timestamp, 
-    is_read, 
-    sender_id,
-    CASE 
-      WHEN sender_id = $1 THEN receiver_id
-      ELSE sender_id
-      END AS other_user_id
-  FROM blocked_messages
-  WHERE sender_id = $1 AND receiver_id = ANY($2)
-     OR receiver_id = $1 AND sender_id = ANY($2)
+    WHERE user_id = $1 OR friend_id = $1
+  
+    UNION ALL
+  
+    SELECT 
+      room_id,
+      text,
+      created_at::timestamp,
+      is_read,
+      user_id AS sender_id,
+      friend_id AS other_user_id
+    FROM blocked_messages
+    WHERE user_id = $1 
   `;
 }
 
 // 한 친구당 하나씩 메시지 요약 (상대방을 기준으로 그룹화)
 // 같은 사람에 대해 여러 행이 있으면 맨 위의 것만 하나 남김.
-async function getLastChatPreviewFromBlockers(userId, ids) {
+export async function getChatSummaries(userId) {
   const q = `
     SELECT DISTINCT ON (m.other_user_id)
       u.id, 
@@ -262,75 +254,8 @@ async function getLastChatPreviewFromBlockers(userId, ids) {
     ORDER BY m.other_user_id, m.created_at DESC
     `;
 
-  const result = await pool.query(q, [userId, ids]);
-  return Array.isArray(result.rows) ? result.rows : [];
-}
-
-async function getRegularChatSummary(userId) {
-  const q = `
-    SELECT 
-      u.id, 
-      u.username, 
-      u.userImgSrc AS "userImgSrc",
-      m.text AS "lastMsg",
-      m.room_id,
-      m.created_at AS "lastMsgAt",
-      m.user_id AS "lastMsgSenderId",
-      m.is_read AS "lastMsgIsRead"
-    FROM users u 
-    JOIN chat_rooms cr
-      ON (u.id = cr.user1_id AND cr.user2_id = $1)
-      OR (u.id = cr.user2_id AND cr.user1_id = $1)
-    LEFT JOIN LATERAL (
-      SELECT text, created_at, user_id, is_read, room_id
-      FROM messages
-      WHERE room_id = cr.id
-      ORDER BY created_at DESC
-      LIMIT 1
-    ) m ON true
-    WHERE u.id != $1 
-  `;
   const result = await pool.query(q, [userId]);
   return Array.isArray(result.rows) ? result.rows : [];
-}
-
-// 내가 아닌 상대방의 정보/ 마지막 메시지와 시간, 속해있는 채팅방 ID
-// 마지막 메시지 보낸이/ 읽음 여부
-export async function getChatSummaries(userId) {
-  const idsOfBlockers = await getIdsWhoBlockedUser(userId);
-  const regularChatSummary = await getRegularChatSummary(userId);
-  let blockersChatSummary = [];
-
-  if (idsOfBlockers.length > 0) {
-    blockersChatSummary = await getLastChatPreviewFromBlockers(
-      userId,
-      idsOfBlockers
-    );
-  }
-
-  const mergedPreview = [...blockersChatSummary, ...regularChatSummary];
-
-  const latestMap = new Map();
-
-  // 차단 전&후를 포함한 모든 채팅 요약을 확인함.
-  for (const preview of mergedPreview) {
-    const existing = latestMap.get(preview.id);
-
-    // 해당 유저가 아직 저장 안됨 || 지금 메시지가 더 최신 => 갱신
-    if (
-      !existing ||
-      new Date(preview.lastMsgAt) > new Date(existing.lastMsgAt)
-    ) {
-      latestMap.set(preview.id, preview);
-    }
-  }
-
-  // 3. 정렬해서 반환
-  const chatPreviewList = Array.from(latestMap.values()).sort(
-    (a, b) => new Date(b.lastMsgAt) - new Date(a.lastMsgAt)
-  );
-
-  return chatPreviewList;
 }
 
 export async function deleteMessage(messageId) {

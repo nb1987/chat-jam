@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { FaceSmileIcon } from "@heroicons/react/24/outline";
-import { sendMsg } from "@frontend/services/socket";
 import EmojiPicker from "@frontend/components/ui/ChatRoom/EmojiPicker";
+import { saveLocalMessage } from "@frontend/localforage/messageStore";
+import { sendLocalMsg } from "@frontend/utils/sendLocalMsg";
 
 export default function MessageInput({
   roomId,
@@ -9,6 +10,7 @@ export default function MessageInput({
   wrongCondition,
   friendId,
   blockFriend,
+  setLocalMsgs,
 }) {
   const [text, setText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -18,7 +20,21 @@ export default function MessageInput({
   const handleSend = () => {
     if (wrongCondition) return;
 
-    sendMsg(roomId, text, senderId, friendId);
+    const pendingMsgInfo = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      room_id: roomId,
+      text,
+      user_id: senderId,
+      friend_id: friendId,
+      status: "pending",
+      created_at: new Date().toISOString(),
+      is_deleted: false,
+      is_read: false,
+    };
+    saveLocalMessage(pendingMsgInfo); // locally save
+    setLocalMsgs((pre) => [...pre, pendingMsgInfo]); // UI update
+
+    sendLocalMsg(pendingMsgInfo, setLocalMsgs); // to server
     setText("");
     setIsTyping(false);
 

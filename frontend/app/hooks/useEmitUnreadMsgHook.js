@@ -34,7 +34,5 @@ export default function useEmitUnreadMsgHook(msgHistory, roomId, myId) {
         } // 서버 응답이 실패시 재시도 큐에 추가"
       });
     }
-
-    // return () => socket.off("markAsRead"); 보내는 쪽은 이벤트 해제가 필요없음.
   }, [unreadMsgIds, roomId, msgHistory, setUnreadCount, addToRetryQueue]);
 }

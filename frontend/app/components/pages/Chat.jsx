@@ -38,10 +38,14 @@ export default function Chat() {
       setPage((state) => ({ ...state, isLoading: true }));
       const data = await chatService.getChatSummaries();
 
+      const sortedDataByDate = data
+        .slice()
+        .sort((a, b) => new Date(b.lastMsgAt) - new Date(a.lastMsgAt));
+
       setPage((state) => ({
         ...state,
         isLoading: false,
-        chatSummaries: data,
+        chatSummaries: sortedDataByDate,
       }));
     } catch (err) {
       if (!abortController.signal.aborted) {
@@ -56,13 +60,15 @@ export default function Chat() {
     }
   };
 
+  useUpdateChatSummaryHook(setPage);
+
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";
 
     fetchPageData();
 
-    const onFocus = () => fetchPageData(); // 윈도우 포커스 시 동기화
-    window.addEventListener("focus", onFocus);
+    const onFocus = () => fetchPageData();
+    window.addEventListener("focus", onFocus); // 다른 앱에서 돌아옴
 
     socket.on("connect", fetchPageData); // 소켓 재연결 시 동기화
 
@@ -70,9 +76,7 @@ export default function Chat() {
       window.removeEventListener("focus", onFocus);
       socket.off("connect", fetchPageData);
     };
-  }, [unreadCount]);
-
-  useUpdateChatSummaryHook(setPage);
+  }, []);
 
   if (page.isLoading || !decodedUser) {
     return <Spinner />;

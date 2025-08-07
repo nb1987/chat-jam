@@ -82,17 +82,6 @@ export async function didUserBlockFriend(senderId, receiverId) {
   return result.rowCount > 0;
 }
 
-// 나를 차단한 친구들 목록
-export async function getIdsWhoBlockedUser(userId) {
-  const q = `
-    SELECT blocker_id
-    FROM blocked_users
-    WHERE blocked_id = $1
-  `;
-  const result = await pool.query(q, [userId]);
-  return result.rows.map((row) => row.blocker_id);
-}
-
 export async function blockFriend(userId, friendId) {
   const q = `
   INSERT INTO blocked_users (blocker_id, blocked_id)

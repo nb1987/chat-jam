@@ -1,18 +1,25 @@
-import { ExclamationCircleIcon } from "@heroicons/react/24/solid";
-import { format } from "date-fns";
+import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useContext, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
 import ChatService from "@frontend/services/chat.service";
 import AuthContext from "@frontend/contexts/auth-context";
 import FriendMsgBubble from "./FriendMsgBubble";
-// msg = { id, room_id, user_id, friend_id, text, created_at, id_deleted, is_read }
+import { updateMessageStatus } from "@frontend/localforage/messageStore";
+import { sendLocalMsg } from "@frontend/utils/sendLocalMsg";
+import DeletedPlaceholder from "./DeletedPlaceholder";
+import TimestampInRoom from "./TimestampInRoom";
+import UnreadBadge from "./UnreadBadge";
+import PendingIcon from "./PendingIcon";
 // myInfo = {id, username, image}
+
+// {user_id, text, created_at, is_deleted, is_read, status, id} = msg
 export default function MessageBubble({
   msg,
   myInfo,
   friendInfo,
   onLocalMsgDelete,
+  setLocalMsgs,
 }) {
   const { id: myId } = myInfo;
   const isItMe = msg.user_id === myId;
@@ -62,6 +69,11 @@ export default function MessageBubble({
     }
   };
 
+  const handleResend = async (failedMsg) => {
+    await updateMessageStatus(failedMsg.id, "pending");
+    sendLocalMsg(failedMsg, setLocalMsgs);
+  };
+
   if (!decodedUser) {
     return <Spinner />;
   }
@@ -79,14 +91,20 @@ export default function MessageBubble({
 
       {isItMe && (
         <div className="flex items-end gap-2">
-          {!msg.is_read && (
-            <span className="flex gap-1 text-xs text-orange-600">unread</span>
+          {msg.status === "pending" && <PendingIcon />}
+          {!msg.is_read && msg.status === "sent" && <UnreadBadge />}
+          {msg.status === "failed" && (
+            <span
+              onClick={() => handleResend(msg)}
+              className="flex gap-1 pb-2 cursor-pointer"
+            >
+              <ArrowPathIcon className="size-4 text-red-600" />
+            </span>
           )}
-          <span className="text-xs text-gray-500">
-            {msg.created_at && !isNaN(new Date(msg.created_at))
-              ? format(new Date(msg.created_at), "HH:mm")
-              : "??:??"}
-          </span>
+          {msg.status !== "failed" && (
+            <TimestampInRoom createdAt={msg.created_at} />
+          )}
+
           <div
             ref={bubbleRef}
             onContextMenu={
@@ -94,16 +112,7 @@ export default function MessageBubble({
             } // right click happens
             className="relative px-3 py-2 rounded-xl max-w-xs bg-orange-100 text-sm text-gray-800 rounded-br-none"
           >
-            {msg.is_deleted ? (
-              <div className="flex items-center gap-1 italic text-sm text-gray-100">
-                <span>
-                  <ExclamationCircleIcon className="size-5 text-gray-100" />
-                </span>
-                This message is deleted.
-              </div>
-            ) : (
-              msg.text
-            )}
+            {msg.is_deleted ? <DeletedPlaceholder /> : msg.text}
           </div>
         </div>
       )}
@@ -116,7 +125,7 @@ export default function MessageBubble({
           <button
             className="w-full text-left px-2 py-1 text-xs text-red-600 hover:bg-gray-100"
             onClick={() => {
-              handleDeleteMsg(msg.id);
+              handleDeleteMsg(Number(msg.id));
             }}
           >
             Delete Message

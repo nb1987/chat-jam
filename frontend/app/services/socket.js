@@ -27,6 +27,18 @@ export const leaveRoom = (roomId) => {
   socket.emit("leaveRoom", roomId);
 };
 
-export const sendMsg = (roomId, text, senderId, friendId) => {
-  socket.emit("sendMsg", { roomId, text, senderId, friendId });
+export const sendMsg = (pendingMsgInfo) => {
+  return new Promise((resolve, reject) => {
+    socket.emit("sendMsg", pendingMsgInfo, (res) => {
+      if (res.status === "failed") {
+        reject({ tempId: res.tempId }); // catch로 들어감
+      } else {
+        resolve({
+          tempId: res.tempId,
+          serverId: res.serverId,
+          serverCreatedAt: res.serverCreatedAt,
+        }); // try로 들어감
+      }
+    });
+  });
 };

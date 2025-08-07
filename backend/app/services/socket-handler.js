@@ -27,48 +27,66 @@ export default function socketHandler(io) {
       socket.leave(`room_${roomId}`);
     });
 
-    // { id, room_id, user_id, friend_id, text, created_at, is_read } = insertedMsg
-    socket.on("sendMsg", async ({ roomId, text, senderId, friendId }) => {
+    // { id, room_id, user_id, friend_id, text, created_at, status, is_deleted, is_read} = pendingInfo
+    // { room_id, user_id, friend_id, text, client_created_at, is_read } = insertedMsg
+    socket.on("sendMsg", async (pendingMsgInfo, callback) => {
+      const { room_id, text, user_id, friend_id, created_at } = pendingMsgInfo;
+
       try {
-        const insertedMsg = await insertMsg(roomId, text, senderId, friendId);
-        const senderIsBlocked = await isSenderBlocked(senderId, friendId);
-        pendingLastMsgs.set(roomId, insertedMsg);
+        const insertedMsg = await insertMsg(
+          room_id,
+          text,
+          user_id,
+          friend_id,
+          created_at
+        );
+        const senderIsBlocked = await isSenderBlocked(user_id, friend_id);
+        pendingLastMsgs.set(room_id, insertedMsg);
+
+        callback({
+          status: "sent",
+          tempId: pendingMsgInfo.id,
+          serverId: insertedMsg.id,
+          serverCreatedAt: insertedMsg.created_at,
+        });
 
         if (!senderIsBlocked) {
-          io.to(`room_${roomId}`).emit("messageToRoom", insertedMsg);
-          io.to(`user_${friendId}`).emit("notifyMessage", insertedMsg);
+          io.to(`user_${friend_id}`).emit("messageToRoom", insertedMsg);
+          io.to(`user_${friend_id}`).emit("notifyMessage", insertedMsg);
 
-          // need username, userImgSrc
-          if (!timers.has(roomId)) {
+          // 이 방에 타이머 없음 (첫 메시지일 때). 200ms 후 이벤트 보냄.
+          if (!timers.has(room_id)) {
             const timerId = setTimeout(() => {
-              const last = pendingLastMsgs.get(roomId);
-              // 객체에 이름을 붙여서 보낼 순 없을까
-              // 내가 차단을 안 당했다면 채팅방 소속인 나와 상대의 chat 페이지도 동시에 업데이트
-              io.to(`room_${roomId}`).emit("updateChatSummary", {
-                room_id: last.room_id,
+              const last = pendingLastMsgs.get(room_id);
+
+              // 차단 안됨, 모두의 chat 페이지도 동시에 업데이트
+              io.to(`user_${user_id}`).emit("updateChatSummary", {
+                id: friend_id,
                 lastMsg: last.text,
                 lastMsgAt: last.created_at,
               });
-              pendingLastMsgs.delete(roomId);
-              timers.delete(roomId);
+
+              io.to(`user_${friend_id}`).emit("updateChatSummary", {
+                id: user_id,
+                lastMsg: last.text,
+                lastMsgAt: last.created_at,
+              });
+              pendingLastMsgs.delete(room_id); // 마지막 메시지 지워놓음
+              timers.delete(room_id); // 시간 안에 들어온 메시지 다 보내고 타이머 지움
             }, 200);
 
-            timers.set(roomId, timerId);
+            timers.set(room_id, timerId);
           }
         } else {
-          socket.emit("msgToMe", insertedMsg); // chatRoom
-          socket.emit("updateChatSummary", {
-            id: friendId,
-            lastMsg: last.text,
-            lastMsgAt: last.created_at,
-          }); // chat
+          io.to(`user_${user_id}`).emit("updateChatSummary", {
+            id: friend_id,
+            lastMsg: insertedMsg.text,
+            lastMsgAt: insertedMsg.created_at,
+          });
         }
       } catch (err) {
         console.error("Failed to insert message:", err.message);
-        socket.emit("msgError", {
-          code: "INSERT_FAILED",
-          message: "Failed to send message",
-        });
+        callback({ status: "failed", tempId: pendingMsgInfo.id });
       }
     });
 

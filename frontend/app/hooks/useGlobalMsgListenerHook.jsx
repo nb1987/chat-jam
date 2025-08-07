@@ -13,7 +13,8 @@ export default function useGlobalMsgListenerHook() {
     const handleGlobalUnreadCount = (insertedMsg) => {
       if (insertedMsg.room_id !== currentRoomId) {
         setUnreadCount((count) => {
-          const currentCount = count[insertedMsg.room_id];
+          const currentCount = Number(count[insertedMsg.room_id]);
+
           return {
             ...count,
             [insertedMsg.room_id]: (currentCount || 0) + 1,

@@ -1,4 +1,5 @@
 import { UserIcon, EnvelopeIcon } from "@heroicons/react/24/solid";
+import TimestampInChatSum from "./ChatRoom/TimestampInChatSum";
 
 export default function ChatListItem({
   lastMsgAt,
@@ -42,11 +43,7 @@ export default function ChatListItem({
             {lastMsg}
           </div>
           <div className="text-xs text-gray-400 whitespace-nowrap ml-4 shrink-0">
-            {lastMsgAt &&
-              new Date(lastMsgAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+            {lastMsgAt && <TimestampInChatSum lastMsgAt={lastMsgAt} />}
           </div>
         </div>
       </div>

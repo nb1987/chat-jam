@@ -23,26 +23,29 @@ CREATE TABLE chat_rooms (
 ); 
 
 -- ALTER TABLE messages ADD COLUMN is_read BOOLEAN DEFAULT false;
-CREATE TABLE messages (
+
+CREATE TABLE messages ( -- messages_columns_arranged
   id SERIAL PRIMARY KEY,
   created_at TIMESTAMP DEFAULT NOW(),
   room_id INT REFERENCES chat_rooms(id) ON DELETE CASCADE,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,
-  friend_id INT REFERENCES users(id) ON DELETE CASCADE,
   text TEXT NOT NULL
   is_deleted BOOLEAN DEFAULT false
   is_read BOOLEAN DEFAULT false 
+  friend_id INT REFERENCES users(id) ON DELETE CASCADE,
+  client_created_at TIMESTAMP NULL
 ); 
 
 CREATE TABLE blocked_messages (
   id SERIAL PRIMARY KEY,            
   created_at TIMESTAMP DEFAULT NOW(), 
   room_id INT NOT NULL,          
-  sender_id INT NOT NULL,         
-  receiver_id INT NOT NULL,      
+  user_id INT REFERENCES users(id)   ON DELETE CASCADE,
+  friend_id INT REFERENCES users(id)   ON DELETE CASCADE,
   text TEXT,                      
   is_deleted BOOLEAN DEFAULT false
   is_read BOOLEAN DEFAULT false 
+  client_created_at TIMESTAMP NULL
 );
 
 CREATE INDEX index_msg_room_created ON messages (room_id, created_at)
@@ -68,3 +71,16 @@ VALUES
 
 -- Read chat messages
 -- SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC;
+
+CREATE VIEW messages_columns_arranged AS
+SELECT
+  id,
+  created_at,
+  room_id,
+  user_id,
+  friend_id,
+  text,
+  is_deleted,
+  is_read,
+  client_created_at
+FROM messages;

@@ -8,8 +8,8 @@ export default function useChatHandlers({
   roomState,
   setRoomState,
   setShouldAutoScroll,
-  isFetchMoreMsg,
-  setIsFetchMoreMsg,
+  isFetchingMoreMsg,
+  setIsFetchingMoreMsg,
   messageCursor,
   setMessageCursor,
   hasMoreChatHistory,
@@ -31,11 +31,11 @@ export default function useChatHandlers({
     const controller = new AbortController();
     const chatService = new ChatService(controller, authContext);
 
-    if (!hasMoreChatHistory || isFetchMoreMsg) return;
+    if (!hasMoreChatHistory || isFetchingMoreMsg) return;
 
     try {
       setShouldAutoScroll(false);
-      setIsFetchMoreMsg(true);
+      setIsFetchingMoreMsg(true);
 
       const { messages, nextCursor, hasMore } =
         await chatService.getChatHistory(
@@ -56,7 +56,7 @@ export default function useChatHandlers({
         toast.error("Unexpected error while loading chat history");
       }
     } finally {
-      setIsFetchMoreMsg(false);
+      setIsFetchingMoreMsg(false);
     }
   }, [
     authContext,
@@ -64,8 +64,8 @@ export default function useChatHandlers({
     roomState,
     setRoomState,
     setShouldAutoScroll,
-    isFetchMoreMsg,
-    setIsFetchMoreMsg,
+    isFetchingMoreMsg,
+    setIsFetchingMoreMsg,
     messageCursor,
     setMessageCursor,
     hasMoreChatHistory,
