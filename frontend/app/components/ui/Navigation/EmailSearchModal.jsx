@@ -5,8 +5,8 @@ import toast from "react-hot-toast";
 import UsersService from "@frontend/services/users.service";
 import AuthContext from "@frontend/contexts/auth-context";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
-import EmailSearchForm from "@frontend/components/ui/EmailSearchForm";
-import SearchResult from "@frontend/components/ui/SearchResult";
+import EmailSearchForm from "@frontend/components/ui/Navigation/EmailSearchForm";
+import SearchResult from "@frontend/components/ui/Navigation/SearchResult";
 import FriendsContext from "@frontend/contexts/friends-context";
 
 export default function EmailSearchModal({ open, onClose }) {

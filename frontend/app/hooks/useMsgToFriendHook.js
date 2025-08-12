@@ -2,7 +2,7 @@ import { useContext, useEffect } from "react";
 import CurrentRoomContext from "@frontend/contexts/current-room-context";
 import { socket } from "@frontend/services/socket";
 
-export default function useMsgToRoomHook(setRoomState) {
+export default function useMsgToFriendHook(setRoomState) {
   const { currentRoomId } = useContext(CurrentRoomContext);
 
   useEffect(() => {
@@ -16,8 +16,8 @@ export default function useMsgToRoomHook(setRoomState) {
         }));
     };
 
-    socket.on("messageToRoom", handleNewMsg);
+    socket.on("messageToFriend", handleNewMsg);
 
-    return () => socket.off("messageToRoom", handleNewMsg);
+    return () => socket.off("messageToFriend", handleNewMsg);
   }, [setRoomState, currentRoomId]);
 }

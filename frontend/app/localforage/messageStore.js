@@ -1,15 +1,15 @@
-import localforage from "@frontend/localforage/localforageConfig";
+import { messageStore } from "@frontend/localforage/localforageConfig";
 import { sendMsg, socket } from "@frontend/services/socket";
 
 // { tempId, roomId, text, senderId, friendId, status, created_at } = msg
 
 export async function saveLocalMessage(msg) {
-  return localforage.setItem(msg.id, msg);
+  return messageStore.setItem(msg.id, msg);
 }
 
 export async function getMessagesByStatus(status) {
   const list = [];
-  await localforage.iterate((value) => {
+  await messageStore.iterate((value) => {
     if (value.status === status) {
       list.push(value);
     }
@@ -24,7 +24,7 @@ export async function updateMessageStatus(
   newCreatedAt = null
 ) {
   try {
-    const msg = await localforage.getItem(id);
+    const msg = await messageStore.getItem(id);
     if (!msg) return;
 
     msg.status = newStatus;
@@ -35,10 +35,10 @@ export async function updateMessageStatus(
 
     if (newId && newId !== id) {
       msg.id = newId;
-      await localforage.removeItem(id);
-      await localforage.setItem(newId, msg);
+      await messageStore.removeItem(id);
+      await messageStore.setItem(newId, msg);
     } else {
-      await localforage.setItem(id, msg);
+      await messageStore.setItem(id, msg);
     }
     return msg;
   } catch (err) {

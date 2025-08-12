@@ -5,7 +5,12 @@ import { useRetrySendingUnreadHook } from "@frontend/hooks/useRetrySendingUnread
 
 // DB에 아직 읽지않은 메시지로 된 아이디 목록을 계산해놓음,
 // useMemo에서 반환하는 값을 매번 계산하는 것을 피함.
-export default function useEmitUnreadMsgHook(msgHistory, roomId, myId) {
+export default function useEmitUnreadMsgHook(
+  msgHistory,
+  roomId,
+  myId,
+  friendId
+) {
   const { setUnreadCount } = useContext(UnreadContext);
   const { addToRetryQueue } = useRetrySendingUnreadHook(socket);
 
@@ -28,11 +33,23 @@ export default function useEmitUnreadMsgHook(msgHistory, roomId, myId) {
         [roomId]: Math.max((count[roomId] || 0) - numOfUnreadMsgs, 0),
       }));
 
-      socket.emit("sendUnreadMsg", { unreadMsgIds, roomId }, (res) => {
-        if (!res.success) {
-          addToRetryQueue(unreadMsgIds, roomId);
-        } // 서버 응답이 실패시 재시도 큐에 추가"
-      });
+      socket.emit(
+        "sendUnreadMsg",
+        { unreadMsgIds, roomId, myId, friendId },
+        (res) => {
+          if (!res.success) {
+            addToRetryQueue(unreadMsgIds, roomId);
+          } // 서버 응답이 실패시 재시도 큐에 추가"
+        }
+      );
     }
-  }, [unreadMsgIds, roomId, msgHistory, setUnreadCount, addToRetryQueue]);
+  }, [
+    unreadMsgIds,
+    roomId,
+    msgHistory,
+    setUnreadCount,
+    addToRetryQueue,
+    myId,
+    friendId,
+  ]);
 }

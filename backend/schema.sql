@@ -64,6 +64,15 @@ CREATE TABLE blocked_users (
   PRIMARY KEY (blocker_id, blocked_id)
 );
 
+CREATE TABLE push_subscriptions (
+  user_id   TEXT NOT NULL,
+  endpoint  TEXT PRIMARY KEY,         
+  p256dh    TEXT NOT NULL,
+  auth      TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_push_sub_user ON push_subscriptions(user_id);
+
 INSERT INTO users (username, email, password, city, state)
 VALUES
 ('Sammy', 'bot1@example.com', '{"salt":"73ada13ae6ae68146afcfa2524446b97","hashedPassword":"1153321487be392d9903bf4b74968332d84077ef9877c6228fc2fa011bce49803ceaedd70f11f6378306f55572cf80051af395be857586e7389c9989365c513b"}', 'Los Angeles', 'California'),

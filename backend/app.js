@@ -10,7 +10,9 @@ import { Server as SocketIOServer } from "socket.io";
 import accountRoutes from "./app/routes/accounts.js";
 import usersRoutes from "./app/routes/users.js";
 import chatRoutes from "./app/routes/chat.js";
+import pushRoutes from "./app/routes/push.js";
 import socketHandler from "./app/services/socket-handler.js";
+import { initWebPush } from "./app//services/push-service.js";
 
 const app = express();
 
@@ -50,9 +52,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal Server Error" });
 });
 
+initWebPush(); // 서버가 시작하면 한 번만 설정(푸시를 보낼 때 쓸 서버 정보)
+
 app.use("/api/accounts", accountRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/push", pushRoutes);
 
 server.listen(PORT, () => {
   console.log(`🚩Server running on port ${PORT}`);

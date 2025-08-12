@@ -49,9 +49,9 @@ export default function socketHandler(io) {
           serverId: insertedMsg.id,
           serverCreatedAt: insertedMsg.created_at,
         });
-
+        // 메시지는 실시간으로 업데이트되는데 아이콘이 업데이트 안됨.
         if (!senderIsBlocked) {
-          io.to(`user_${friend_id}`).emit("messageToRoom", insertedMsg);
+          io.to(`user_${friend_id}`).emit("messageToFriend", insertedMsg);
           io.to(`user_${friend_id}`).emit("notifyMessage", insertedMsg);
 
           // 이 방에 타이머 없음 (첫 메시지일 때). 200ms 후 이벤트 보냄.
@@ -70,6 +70,7 @@ export default function socketHandler(io) {
                 id: user_id,
                 lastMsg: last.text,
                 lastMsgAt: last.created_at,
+                lastMsgIsRead: false,
               });
               pendingLastMsgs.delete(room_id); // 마지막 메시지 지워놓음
               timers.delete(room_id); // 시간 안에 들어온 메시지 다 보내고 타이머 지움
@@ -90,18 +91,25 @@ export default function socketHandler(io) {
       }
     });
 
-    socket.on("sendUnreadMsg", async ({ unreadMsgIds, roomId }, callback) => {
-      try {
-        const updatedMsgs = await updateMsgAsRead(unreadMsgIds, roomId);
-        updatedMsgs.map((readMsg) => {
-          io.to(`room_${roomId}`).emit("receiveReadMsg", readMsg);
-        });
-        callback({ success: true });
-      } catch (err) {
-        console.error("Failed while receiving messages:", err.message);
-        callback({ success: false });
+    // 나의 chat 페이지에서 Envelope 아이콘을 지움.
+    // 상대방의 채팅방을 업데이트함 (unread를 없애줌)
+    // { id, is_read: true, user_id, friend_id, room_id } = readMsg
+    socket.on(
+      "sendUnreadMsg",
+      async ({ unreadMsgIds, roomId, myId, friendId }, callback) => {
+        try {
+          const updatedMsgs = await updateMsgAsRead(unreadMsgIds, roomId);
+          const payload = { roomId, ids: updatedMsgs.map((m) => m.id) };
+
+          io.to(`user_${friendId}`).emit("receiveReadMsg", payload);
+          io.to(`user_${myId}`).emit("receiveReadMsg", payload);
+          callback?.({ success: true });
+        } catch (err) {
+          console.error("Failed while receiving messages:", err.message);
+          callback?.({ success: false });
+        }
       }
-    });
+    );
 
     socket.on("disconnect", () => {
       console.log("User disconnected");

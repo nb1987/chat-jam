@@ -3,81 +3,22 @@ import { isSenderBlocked } from "./users-service.js";
 
 const PAGE_SIZE = 10;
 
-const not_blocked_with_cursor = () => {
+function mergedTableForHistory() {
   return `
-    SELECT * FROM messages_columns_arranged
-    WHERE room_id = $1
-    AND (
-      created_at < $2::timestamp 
-      OR (created_at = $2::timestamp AND id < $3)
-      )
-    ORDER BY created_at DESC, id DESC
-    LIMIT 11
+    SELECT *
+    FROM messages_columns_arranged
+    WHERE (user_id = $1 AND friend_id = $2)
+       OR (user_id = $2 AND friend_id = $1)
+
+    UNION ALL
+  
+    SELECT *
+    FROM blocked_messages
+    WHERE user_id = $1 AND friend_id = $2
   `;
-}; // roomId, cursor, cursorId,
+}
 
-const not_blocked_without_cursor = () => {
-  return `
-    SELECT * FROM messages_columns_arranged
-    WHERE room_id = $1
-    ORDER BY created_at DESC, id DESC
-    LIMIT 11
-  `;
-};
-
-const blocked_with_cursor = () => {
-  return `
-    SELECT * FROM (
-      SELECT *, 'messages' AS source
-      FROM messages_columns_arranged AS m
-      WHERE 
-        (m.user_id = $1 AND m.friend_id = $2)
-        OR
-        (m.user_id = $2 AND m.friend_id = $1)
-
-      UNION ALL
-
-      SELECT *, 'blocked' AS source
-      FROM blocked_messages AS bm
-      WHERE 
-        (bm.user_id = $1 AND bm.friend_id = $2)  
-        OR
-        (bm.user_id = $2 AND bm.friend_id = $1) 
-    ) AS all_messages
-    WHERE 
-      (created_at < $3)
-      OR (created_at = $3 AND id < $4)
-    ORDER BY created_at DESC, id DESC
-    LIMIT 11
-  `;
-}; //    userId, friendId, cursor, cursorId,
-
-const blocked_without_cursor = () => {
-  return `
-    SELECT * FROM (
-      SELECT *, 'messages' AS source
-      FROM messages_columns_arranged AS m
-      WHERE 
-        (m.user_id = $1 AND m.friend_id = $2)
-        OR
-        (m.user_id = $2 AND m.friend_id = $1)
-
-      UNION ALL
-
-      SELECT *, 'blocked' AS source
-      FROM blocked_messages AS bm
-      WHERE 
-        (bm.user_id = $1 AND bm.friend_id = $2)  
-        OR
-        (bm.user_id = $2 AND bm.friend_id = $1)    
-    ) AS all_messages
-    ORDER BY created_at DESC, id DESC
-    LIMIT 11
-  `; //  userId, friendId,
-};
-
-// ({ rows } = await pool.query(...)) 괄호로 {row}를 감싼 이유는:
-// 이미 변수가 선언되어 있고, 다른 값을 할당할 때 씀.
+// cursor = (msg)created_at, cursorId = (msg)id
 export async function fetchChatRoomHistory(
   userId,
   roomId,
@@ -85,34 +26,29 @@ export async function fetchChatRoomHistory(
   cursor = null,
   cursorId = null
 ) {
-  const isBlocked = await isSenderBlocked(userId, friendId);
-  let rows;
+  const q = `
+    SELECT * 
+    FROM (
+      ${mergedTableForHistory()}
+      ) AS m
+    WHERE room_id = $3
+    ${
+      cursor
+        ? `AND (
+      created_at < $4::timestamp 
+      OR (created_at = $4::timestamp AND id < $5)
+      )`
+        : ""
+    }
+    ORDER BY created_at DESC, id DESC
+    LIMIT ${PAGE_SIZE + 1};
+  `;
 
-  if (!isBlocked) {
-    if (cursor) {
-      ({ rows } = await pool.query(not_blocked_with_cursor(), [
-        roomId,
-        cursor,
-        cursorId,
-      ]));
-    } else {
-      ({ rows } = await pool.query(not_blocked_without_cursor(), [roomId]));
-    }
-  } else {
-    if (cursor) {
-      ({ rows } = await pool.query(blocked_with_cursor(), [
-        userId,
-        friendId,
-        cursor,
-        cursorId,
-      ]));
-    } else {
-      ({ rows } = await pool.query(blocked_without_cursor(), [
-        userId,
-        friendId,
-      ]));
-    }
-  }
+  const params = cursor
+    ? [userId, friendId, roomId, cursor, cursorId]
+    : [userId, friendId, roomId];
+  const { rows } = await pool.query(q, params);
+
   const hasMore = rows.length > PAGE_SIZE;
   const messages = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
   const nextCursor = hasMore
@@ -123,6 +59,8 @@ export async function fetchChatRoomHistory(
     : { createdAt: null, id: null };
   return { messages, nextCursor, hasMore };
 }
+// rows[rows.length - 1].created_at = Date 객체! 따라서
+// 문자열로 변환시켜 반환함 => toISOString()
 
 export async function getOrCreateRoomId(userId, friendId) {
   const userLow = Math.min(userId, friendId);

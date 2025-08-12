@@ -2,8 +2,8 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { EnvelopeIcon, UserCircleIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
-import EmailSearchModal from "@frontend/components/ui/EmailSearchModal";
-import UsernameSearchModal from "@frontend/components/ui/UsernameSearchModal";
+import EmailSearchModal from "@frontend/components/ui/Navigation/EmailSearchModal";
+import UsernameSearchModal from "@frontend/components/ui/Navigation/UsernameSearchModal";
 
 export default function SearchUserModal({
   searchModalOpens,

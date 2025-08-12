@@ -9,7 +9,7 @@ import MessageInput from "@frontend/components/ui/ChatRoom/MessageInput";
 import SpinnerMini from "@frontend/components/shared/SpinnerMini";
 import useBlockStatusHooks from "@frontend/hooks/useBlockStatusHook";
 import { useChatRoom } from "@frontend/hooks/useChatRoom";
-import DateSeparator from "./DateSeperator";
+import DateSeparator from "@frontend/components/ui/ChatRoom/DateSeperator";
 
 export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
   const authContext = useContext(AuthContext);
@@ -77,7 +77,7 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                 )}
 
                 {mergedChat.map((msg, i) => {
-                  const prev = mergedChat[i - 1];
+                  const prev = mergedChat[i - 1]; // previous msg obj
                   const currentDay = new Date(msg.created_at).toDateString();
                   const prevDay = prev
                     ? new Date(prev.created_at).toDateString()
@@ -86,12 +86,12 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
                   // 첫 메시지 혹은 날짜가 이전 메시지와 다름
                   const showSeparator = i === 0 || currentDay !== prevDay;
 
+                  // map 콜백의 결과물을 반환
                   return (
                     <div
                       key={msg.id || msg.tempId}
                       className="flex flex-col gap-2"
                     >
-                      {/* 첫 메시지거나 날짜가 바뀔 때만*/}
                       {showSeparator && (
                         <DateSeparator createdAt={msg.created_at} />
                       )}
@@ -127,17 +127,4 @@ export default function ChatRoom({ friendObj, startChatRoom, closeModal }) {
 }
 {
   /* { id, room_id, text, user_id, friend_id, status, created_at, is_deleted, is_read } = mergedChat */
-}
-
-{
-  /* <MessageBubble
-                    key={i}
-                    msg={msg}
-                    myInfo={roomState.myInfo}
-                    friendInfo={friendObj}
-                    onLocalMsgDelete={onLocalMsgDelete}
-                    setLocalMsgs={setLocalMsgs}
-                    /><div>
-                      {showSeperator && <DateSeparator date={msg.created_at />}}
-                    </div> */
 }

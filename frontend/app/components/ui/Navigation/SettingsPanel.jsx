@@ -22,7 +22,7 @@ export default function SettingsPanel() {
   return (
     <>
       <Menu as="div" className="relative">
-        <MenuButton className="focus:outline-none">
+        <MenuButton className="focus:outline-none pt-1">
           <Cog8ToothIcon className="h-5 w-5 text-gray-400 cursor-pointer" />
         </MenuButton>
 

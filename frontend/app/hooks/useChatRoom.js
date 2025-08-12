@@ -5,7 +5,7 @@ import SocketContext from "@frontend/contexts/socket-context";
 import { getMessagesByStatus } from "@frontend/localforage/messageStore";
 import AccountService from "@frontend/services/account.service";
 import ChatService from "@frontend/services/chat.service";
-import useMsgToRoomHook from "@frontend/hooks/useMsgToRoomHook";
+import useMsgToFriendHook from "@frontend/hooks/useMsgToFriendHook";
 import useEmitUnreadMsgHook from "@frontend/hooks/useEmitUnreadMsgHook";
 import useReceiveReadMsgHook from "@frontend/hooks/useReceiveReadMsgHook";
 import useScrollToBottomHook from "@frontend/hooks/useScrollToBottomHook";
@@ -86,11 +86,12 @@ export function useChatRoom(friendId, authContext, closeModal) {
   }, [friendId]);
 
   // socket hooks
-  useMsgToRoomHook(setRoomState, roomState.myInfo.id);
+  useMsgToFriendHook(setRoomState, roomState.myInfo.id);
   useEmitUnreadMsgHook(
     roomState.msgHistory,
     roomState.roomId,
-    roomState.myInfo.id
+    roomState.myInfo.id,
+    friendId
   );
   useReceiveReadMsgHook(setRoomState, roomState.myInfo.id);
 

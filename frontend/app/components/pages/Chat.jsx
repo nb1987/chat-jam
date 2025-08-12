@@ -9,6 +9,7 @@ import ChatService from "@frontend/services/chat.service";
 import ChatRoom from "@frontend/components/ui/ChatRoom/ChatRoom";
 import ChatListItem from "@frontend/components/ui/ChatListItem";
 import useUpdateChatSummaryHook from "@frontend/hooks/useUpdateChatSummaryHook";
+import useUpdateEnvelopeHook from "@frontend/hooks/useUpdateEnvelopeHook";
 
 export default function Chat() {
   const { unreadCount } = useContext(UnreadContext);
@@ -29,7 +30,7 @@ export default function Chat() {
     (sum, count) => sum + Number(count),
     0
   );
-  // {id, username, userImgSrc, lastMsg,lastMsgAt, lastMsgSenderId, lastMsgIsRead, room_id, }
+  // {id, username, userImgSrc, lastMsg, lastMsgId, lastMsgAt, lastMsgSenderId, lastMsgIsRead, room_id, }
   const fetchPageData = async () => {
     const abortController = new AbortController();
     const chatService = new ChatService(abortController, authContext);
@@ -61,6 +62,7 @@ export default function Chat() {
   };
 
   useUpdateChatSummaryHook(setPage);
+  useUpdateEnvelopeHook(setPage);
 
   useEffect(() => {
     document.title = "ChatJam, Talk Smart";

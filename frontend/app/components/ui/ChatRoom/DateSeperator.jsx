@@ -26,4 +26,7 @@ export default function DateSeparator({ createdAt }) {
 }
 
 // msg.createdAt = "2025-07-17T22:46:32.015Z"
+
 // new Date("2025-07-17T22:46:32.015Z") = Fri Jul 18 2025 07:46:32 GMT+0900
+
+// new Date("2025-07-17T22:46:32.015Z").toDateString() = Fri Jul 18 2025

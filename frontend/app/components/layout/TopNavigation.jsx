@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { UserPlusIcon } from "@heroicons/react/24/solid";
-import SettingsPanel from "@frontend/components/ui/SettingsPanel";
-import SearchUserModal from "@frontend/components/ui/SearchUserModal";
+import SettingsPanel from "@frontend/components/ui/Navigation/SettingsPanel";
+import SearchUserModal from "@frontend/components/ui/Navigation/SearchUserModal";
+import QuietModeToggle from "@frontend/components/ui/Navigation/QuietModeToggle";
 
 export default function TopNavigation() {
   const [searchModalOpens, setSearchModalOpens] = useState(false);
@@ -15,11 +16,12 @@ export default function TopNavigation() {
           }}
           className="flex flex-col items-center text-xs font-medium cursor-pointer"
         >
-          <span className="h-5 w-5">
+          <span className="size-5 text-gray-400">
             <UserPlusIcon />
           </span>
         </div>
         <SettingsPanel />
+        <QuietModeToggle />
       </div>
 
       {searchModalOpens && (

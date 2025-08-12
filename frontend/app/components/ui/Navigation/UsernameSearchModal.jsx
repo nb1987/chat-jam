@@ -6,8 +6,8 @@ import UsersService from "@frontend/services/users.service";
 import AuthContext from "@frontend/contexts/auth-context";
 import FriendsContext from "@frontend/contexts/friends-context";
 import ErrorPage from "@frontend/components/notifications/ErrorPage";
-import SearchResult from "@frontend/components/ui/SearchResult";
-import UsernameSearchForm from "@frontend/components/ui/UsernameSearchForm";
+import SearchResult from "@frontend/components/ui/Navigation/SearchResult";
+import UsernameSearchForm from "@frontend/components/ui/Navigation/UsernameSearchForm";
 
 export default function UsernameSearchModal({ open, onClose }) {
   const authContext = useContext(AuthContext);

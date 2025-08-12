@@ -28,6 +28,7 @@ import {
   socket as socketInstance,
   registerSocket,
 } from "@frontend/services/socket";
+import { QuietModeProvider } from "@frontend/contexts/quiet-mode-context";
 
 function App() {
   const [accessToken, setAccessToken] = useState(null);
@@ -121,69 +122,77 @@ function App() {
 
   return (
     <AuthContext.Provider value={{ accessToken, setAccessToken }}>
-      <FriendsContext.Provider value={{ friends, setFriends }}>
-        <SocketContext.Provider
-          value={{ socket, setSocket, userExitedOnPurpose }}
-        >
-          <UnreadContext.Provider value={{ unreadCount, setUnreadCount }}>
-            <CurrentRoomContext.Provider
-              value={{ currentRoomId, setCurrentRoomId }}
-            >
-              <Toaster position="top-center" reverseOrder={false} />
+      <QuietModeProvider>
+        <FriendsContext.Provider value={{ friends, setFriends }}>
+          <SocketContext.Provider
+            value={{ socket, setSocket, userExitedOnPurpose }}
+          >
+            <UnreadContext.Provider value={{ unreadCount, setUnreadCount }}>
+              <CurrentRoomContext.Provider
+                value={{ currentRoomId, setCurrentRoomId }}
+              >
+                <Toaster position="top-center" reverseOrder={false} />
 
-              {isLoading ? (
-                <Spinner />
-              ) : (
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      !accessToken &&
-                      !publicRoutes.some((route) =>
-                        location.pathname.startsWith(route)
-                      ) ? (
-                        <Navigate to="/login" replace />
-                      ) : (
-                        <Navigate to="/friends" replace />
-                      )
-                    }
-                  />
-
-                  <Route
-                    path="/login"
-                    element={<Login onSuccessfulLogin={loginHandler} />}
-                  />
-                  <Route
-                    path="/signup"
-                    element={<SignUp onSuccessfulLogin={loginHandler} />}
-                  />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route
-                    path="/update-password"
-                    element={
-                      <UpdatePassword onSuccessfulLogin={loginHandler} />
-                    }
-                  />
-                  <Route path="/account-deleted" element={<AccountDeleted />} />
-
-                  <Route element={<MainLayout />}>
-                    <Route path="/friends" element={<Friends />} />
-                    <Route path="/chat" element={<Chat />} />
-                    <Route path="/explore" element={<Explore />} />
-                    <Route path="/edit-profile" element={<EditUserProfile />} />
+                {isLoading ? (
+                  <Spinner />
+                ) : (
+                  <Routes>
                     <Route
-                      path="/account-settings"
-                      element={<AccountSettings />}
+                      path="/"
+                      element={
+                        !accessToken &&
+                        !publicRoutes.some((route) =>
+                          location.pathname.startsWith(route)
+                        ) ? (
+                          <Navigate to="/login" replace />
+                        ) : (
+                          <Navigate to="/friends" replace />
+                        )
+                      }
                     />
-                  </Route>
 
-                  <Route path="*" element={<PageNotFound />} />
-                </Routes>
-              )}
-            </CurrentRoomContext.Provider>
-          </UnreadContext.Provider>
-        </SocketContext.Provider>
-      </FriendsContext.Provider>
+                    <Route
+                      path="/login"
+                      element={<Login onSuccessfulLogin={loginHandler} />}
+                    />
+                    <Route
+                      path="/signup"
+                      element={<SignUp onSuccessfulLogin={loginHandler} />}
+                    />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route
+                      path="/update-password"
+                      element={
+                        <UpdatePassword onSuccessfulLogin={loginHandler} />
+                      }
+                    />
+                    <Route
+                      path="/account-deleted"
+                      element={<AccountDeleted />}
+                    />
+
+                    <Route element={<MainLayout />}>
+                      <Route path="/friends" element={<Friends />} />
+                      <Route path="/chat" element={<Chat />} />
+                      <Route path="/explore" element={<Explore />} />
+                      <Route
+                        path="/edit-profile"
+                        element={<EditUserProfile />}
+                      />
+                      <Route
+                        path="/account-settings"
+                        element={<AccountSettings />}
+                      />
+                    </Route>
+
+                    <Route path="*" element={<PageNotFound />} />
+                  </Routes>
+                )}
+              </CurrentRoomContext.Provider>
+            </UnreadContext.Provider>
+          </SocketContext.Provider>
+        </FriendsContext.Provider>
+      </QuietModeProvider>
     </AuthContext.Provider>
   );
 }
