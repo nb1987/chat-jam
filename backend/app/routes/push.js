@@ -27,4 +27,5 @@ router.post("/unsubscribe", authenticateToken, (req, res) => {
   return res.sendStatus(204);
 });
 
+
 export default router;

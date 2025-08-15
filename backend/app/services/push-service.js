@@ -5,14 +5,14 @@ import pool from "../config/db.js";
 // web-push library가 푸시를 보낼 때 사용할 정보를 설정함. VAPID: 서버 신원 증명
 export function initWebPush() {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const priviteKey = process.env.VAPID_PRIVATE_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT || "https://chatjam.com";
 
-  if (!publicKey || !priviteKey) {
+  if (!publicKey || !privateKey) {
     console.warn("PUSH VAPID keys missing. Web Push disabled.");
     return;
   }
-  webpush.setVapidDetails(subject, publicKey, priviteKey);
+  webpush.setVapidDetails(subject, publicKey, privateKey);
 }
 
 // 유저가 브라우저에서 푸시 구독을 하면 subscription 객체가 생성됨 =>
@@ -60,13 +60,14 @@ export async function removeSubscription(userId, endpoint) {
 }
 
 // 유저의 모든 구독(기기) 에 푸시를 보내고, 만료된 구독은 정리.
-export async function sendPushToUser(userId, payloadObj) {
+export async function sendPushToUser(friendId, text) {
   const q = `
         SELECT endpoint, p256dh, auth 
         FROM push_subscriptions 
         WHERE user_id=$1
     `;
-  const { rows } = await pool.query(q, [String(userId)]); // 구독 목록
+  const payloadObj = { body: text, url: `/chat` };
+  const { rows } = await pool.query(q, [String(friendId)]); // 구독 목록
   const payload = JSON.stringify(payloadObj); // 보낼 데이터를 문자로 변환
 
   // 각 구독마다 객체로 변환,
@@ -79,7 +80,7 @@ export async function sendPushToUser(userId, payloadObj) {
       await webpush.sendNotification(sub, payload);
     } catch (e) {
       if (e.statusCode === 404 || e.statusCode === 410) {
-        await removeSubscription(userId, r.endpoint); // 만료 정리
+        await removeSubscription(friendId, r.endpoint); // 만료 정리
       } else {
         console.warn("[push] send error:", e.statusCode, e.body || e.message);
       }

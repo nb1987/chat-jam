@@ -1,4 +1,5 @@
 import { insertMsg, updateMsgAsRead } from "./chat-service.js";
+import { sendPushToUser } from "./push-service.js";
 import { isSenderBlocked } from "./users-service.js";
 
 // io: 카톡 본사 서버
@@ -51,8 +52,22 @@ export default function socketHandler(io) {
         });
         // 메시지는 실시간으로 업데이트되는데 아이콘이 업데이트 안됨.
         if (!senderIsBlocked) {
-          io.to(`user_${friend_id}`).emit("messageToFriend", insertedMsg);
-          io.to(`user_${friend_id}`).emit("notifyMessage", insertedMsg);
+          //📍친구가 방에 없는지를 확인하고 텍스트도 같이 보내자
+          const socketsInRoom = io.sockets.adapter.rooms.get(`room_${room_id}`);
+          const friendSockets = io.sockets.adapter.rooms.get(
+            `user_${friend_id}`
+          );
+          const isFriendInChatRoom =
+            socketsInRoom &&
+            friendSockets &&
+            [...friendSockets].some((socketId) => socketsInRoom.has(socketId));
+
+          if (isFriendInChatRoom) {
+            io.to(`user_${friend_id}`).emit("messageToFriend", insertedMsg);
+          } else {
+            await sendPushToUser(friend_id, text);
+            io.to(`user_${friend_id}`).emit("notifyMessage", insertedMsg);
+          }
 
           // 이 방에 타이머 없음 (첫 메시지일 때). 200ms 후 이벤트 보냄.
           if (!timers.has(room_id)) {
